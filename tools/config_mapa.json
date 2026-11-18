@@ -1,0 +1,179 @@
+{
+  "_comentario": "Configuración del generador de mapa (tools/construir_mapa.py). Cambiar esto y volver a correr el script regenera data/mapa/*.",
+  "region": {
+    "lon_min": -93.0,
+    "lon_max": -25.0,
+    "lat_min": -60.0,
+    "lat_max": 14.0
+  },
+  "escala": 30.0,
+  "_paises_comentario": "Código adm0_a3 de Natural Earth -> etiqueta de país del juego (dueño en 1978).",
+  "paises": {
+    "ARG": "ARG",
+    "CHL": "CHL",
+    "BRA": "BRA",
+    "URY": "URY",
+    "PRY": "PRY",
+    "BOL": "BOL",
+    "PER": "PER",
+    "ECU": "ECU",
+    "COL": "COL",
+    "VEN": "VEN",
+    "GUY": "GUY",
+    "SUR": "SUR",
+    "FLK": "GBR",
+    "SGS": "GBR"
+  },
+  "_guayana_francesa": "Francia tiene provincias en todo el mundo: de ella solo se toma la Guayana Francesa.",
+  "provincias_extra": [
+    {
+      "adm0_a3": "FRA",
+      "iso_3166_2": "FR-GF",
+      "pais": "FRA"
+    }
+  ],
+  "_fusiones_comentario": "Provincias creadas después de 1978 se juntan con la provincia de la que salieron. Clave = la que desaparece, valor = la que la absorbe (código ISO 3166-2, o 'PAÍS-nombre' cuando el código está repetido).",
+  "fusiones_1978": {
+    "CL-AP": "CL-TA",
+    "CL-NB": "CL-BI",
+    "CL-LR": "CL-LL",
+    "BR-TO": "BR-GO",
+    "EC-SE": "EC-G",
+    "EC-SD": "EC-P",
+    "EC-D": "EC-N",
+    "EC-U": "EC-N",
+    "VE-X": "VE-A",
+    "PER-Lima Province": "PE-LIM"
+  },
+  "_notas_fusiones": {
+    "CL-AP": "Arica y Parinacota se separo de Tarapaca en 2007",
+    "CL-NB": "Nuble se separo del Biobio en 2018",
+    "CL-LR": "Los Rios se separo de Los Lagos en 2007",
+    "BR-TO": "Tocantins se separo de Goias en 1988",
+    "EC-SE": "Santa Elena se separo de Guayas en 2007",
+    "EC-SD": "Santo Domingo de los Tsachilas se separo de Pichincha en 2007",
+    "EC-D": "Orellana se separo de Napo en 1998",
+    "EC-U": "Sucumbios se separo de Napo en 1989",
+    "VE-X": "Vargas se separo del Distrito Federal en 1998",
+    "PER-Lima Province": "Lima Metropolitana se trata como parte del departamento de Lima"
+  },
+  "nombres": {
+    "FK-X01~": "Islas Malvinas",
+    "GS-X01~": "Georgias y Sandwich del Sur",
+    "FR-GF": "Guayana Francesa",
+    "VE-A": "Distrito Federal",
+    "CL-RM": "Región Metropolitana",
+    "CL-AI": "Aysén",
+    "CL-LI": "O'Higgins",
+    "CL-MA": "Magallanes",
+    "CL-BI": "Biobío",
+    "CL-TA": "Tarapacá",
+    "CL-LL": "Los Lagos",
+    "COL-Bogota": "Bogotá"
+  },
+  "ids": {
+    "FK-X01~": "FK-MAL",
+    "GS-X01~": "GS-GEO",
+    "COL-Bogota": "CO-DC"
+  },
+  "simplificacion": 0.25,
+  "area_minima_isla": 0.6,
+  "ciudades_rango_maximo": 8,
+  "rios_rango_maximo": 9,
+  "lagos_rango_maximo": 8,
+  "regiones_rango_maximo": 4,
+  "_puertos_extra_comentario": "Puertos importantes que faltan en Natural Earth. Coordenadas aproximadas, a verificar.",
+  "puertos_extra": [
+    {
+      "nombre": "Buenos Aires",
+      "lon": -58.37,
+      "lat": -34.6
+    },
+    {
+      "nombre": "Rosario",
+      "lon": -60.63,
+      "lat": -32.94
+    },
+    {
+      "nombre": "Montevideo",
+      "lon": -56.21,
+      "lat": -34.9
+    },
+    {
+      "nombre": "Valparaíso",
+      "lon": -71.63,
+      "lat": -33.03
+    },
+    {
+      "nombre": "Antofagasta",
+      "lon": -70.4,
+      "lat": -23.65
+    },
+    {
+      "nombre": "Iquique",
+      "lon": -70.15,
+      "lat": -20.21
+    },
+    {
+      "nombre": "Punta Arenas",
+      "lon": -70.91,
+      "lat": -53.16
+    },
+    {
+      "nombre": "Puerto Montt",
+      "lon": -72.94,
+      "lat": -41.48
+    },
+    {
+      "nombre": "Rio de Janeiro",
+      "lon": -43.18,
+      "lat": -22.89
+    },
+    {
+      "nombre": "Asunción",
+      "lon": -57.64,
+      "lat": -25.28
+    },
+    {
+      "nombre": "Guayaquil",
+      "lon": -79.9,
+      "lat": -2.22
+    },
+    {
+      "nombre": "La Guaira",
+      "lon": -66.94,
+      "lat": 10.6
+    },
+    {
+      "nombre": "Maracaibo",
+      "lon": -71.6,
+      "lat": 10.65
+    },
+    {
+      "nombre": "Barranquilla",
+      "lon": -74.78,
+      "lat": 10.98
+    },
+    {
+      "nombre": "Puerto Stanley",
+      "lon": -57.85,
+      "lat": -51.69
+    },
+    {
+      "nombre": "Grytviken",
+      "lon": -36.51,
+      "lat": -54.28
+    },
+    {
+      "nombre": "Georgetown",
+      "lon": -58.17,
+      "lat": 6.81
+    },
+    {
+      "nombre": "Paramaribo",
+      "lon": -55.17,
+      "lat": 5.83
+    }
+  ],
+  "_ids_comentario": "Ids a mano para provincias sin código ISO propio. Clave 'PAÍS-nombre' cuando el código ISO está repetido en Natural Earth."
+}

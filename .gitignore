@@ -1,0 +1,12 @@
+# Godot
+.godot/
+*.translation
+export_presets.cfg
+/build/
+
+# Datos descargados por tools/construir_mapa.py
+tools/.cache/
+
+# Python
+__pycache__/
+*.pyc

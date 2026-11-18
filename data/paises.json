@@ -1,0 +1,20 @@
+{
+  "_comentario": "Países del mapa. color: color del país en el mapa. etiqueta: [lon, lat] donde va el nombre, con 'angulo' en grados y 'tamano' relativo. jugable: entra como país jugable en la primera versión.",
+  "fuente": "Elaboración propia",
+  "paises": {
+    "ARG": { "nombre": "Argentina", "color": "#6faee0", "etiqueta": [-65.2, -35.8], "angulo": 0, "tamano": 1.2, "jugable": true },
+    "CHL": { "nombre": "Chile", "color": "#c44e48", "etiqueta": [-69.6, -25.5], "angulo": 90, "tamano": 0.8, "jugable": true },
+    "BRA": { "nombre": "Brasil", "color": "#4e9a52", "etiqueta": [-52.0, -10.0], "angulo": 0, "tamano": 1.5, "jugable": true },
+    "URY": { "nombre": "Uruguay", "color": "#4f63b5", "etiqueta": [-56.0, -32.7], "angulo": 0, "tamano": 0.6, "jugable": true },
+    "PRY": { "nombre": "Paraguay", "color": "#d1913f", "etiqueta": [-59.3, -22.6], "angulo": 0, "tamano": 0.75, "jugable": true },
+    "BOL": { "nombre": "Bolivia", "color": "#d6c055", "etiqueta": [-64.3, -16.3], "angulo": 0, "tamano": 0.9, "jugable": true },
+    "PER": { "nombre": "Perú", "color": "#a85b8e", "etiqueta": [-75.6, -9.3], "angulo": 45, "tamano": 0.9, "jugable": true },
+    "GBR": { "nombre": "Reino Unido", "color": "#a22630", "etiqueta": [-59.0, -52.6], "angulo": 0, "tamano": 0.45, "jugable": true },
+    "ECU": { "nombre": "Ecuador", "color": "#c97b53", "etiqueta": [-78.3, -1.6], "angulo": 0, "tamano": 0.6, "jugable": false },
+    "COL": { "nombre": "Colombia", "color": "#e2b13a", "etiqueta": [-73.0, 3.6], "angulo": 0, "tamano": 0.9, "jugable": false },
+    "VEN": { "nombre": "Venezuela", "color": "#8f3d5a", "etiqueta": [-66.0, 7.0], "angulo": 0, "tamano": 0.85, "jugable": false },
+    "GUY": { "nombre": "Guyana", "color": "#3fa39a", "etiqueta": [-58.9, 4.8], "angulo": 0, "tamano": 0.45, "jugable": false },
+    "SUR": { "nombre": "Surinam", "color": "#93a24e", "etiqueta": [-55.9, 4.1], "angulo": 0, "tamano": 0.45, "jugable": false },
+    "FRA": { "nombre": "Francia", "color": "#5168a8", "etiqueta": [-53.2, 3.9], "angulo": 0, "tamano": 0.4, "jugable": false }
+  }
+}

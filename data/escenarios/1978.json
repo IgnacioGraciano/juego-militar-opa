@@ -1,0 +1,9 @@
+{
+  "_comentario": "Escenario: fecha de inicio, país del jugador y cambios de dueño de provincias respecto del país de origen (duenos: id de provincia -> país).",
+  "nombre": "1978 — Crisis del Beagle",
+  "fecha_inicio": "1978-01-01",
+  "hora_inicio": 8,
+  "zona_horaria": -3,
+  "pais_jugador": "ARG",
+  "duenos": {}
+}
