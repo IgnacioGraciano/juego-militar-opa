@@ -1,0 +1,57 @@
+{
+  "_comentario": "Reglas del ejército terrestre. Los valores se ajustan probando.",
+  "fuente": "Reglas del juego (elaboración propia)",
+
+  "tipos": {
+    "infanteria": { "nombre": "Infantería", "efectivos": 4000, "ataque": 1.0, "defensa": 1.2, "km_dia": 30, "movil": false },
+    "montana":    { "nombre": "Montaña",    "efectivos": 3500, "ataque": 1.0, "defensa": 1.25, "km_dia": 30, "movil": false },
+    "mecanizada": { "nombre": "Mecanizada", "efectivos": 4000, "ataque": 1.5, "defensa": 1.4, "km_dia": 80, "movil": true },
+    "blindada":   { "nombre": "Blindada",   "efectivos": 3500, "ataque": 2.2, "defensa": 1.3, "km_dia": 70, "movil": true }
+  },
+
+  "_movimiento_comentario": "Multiplicador de la velocidad según el terreno de la provincia a la que se entra. El cruce de un estrecho multiplica además por 'estrecho'.",
+  "movimiento": {
+    "llanura": { "infanteria": 1.0, "montana": 1.0, "mecanizada": 1.0, "blindada": 1.0 },
+    "ciudad":  { "infanteria": 0.8, "montana": 0.8, "mecanizada": 0.7, "blindada": 0.6 },
+    "selva":   { "infanteria": 0.5, "montana": 0.6, "mecanizada": 0.3, "blindada": 0.25 },
+    "montaña": { "infanteria": 0.45, "montana": 0.75, "mecanizada": 0.3, "blindada": 0.25 },
+    "estrecho": 0.3,
+    "rio": 0.8
+  },
+
+  "_estimacion_comentario": "Cómo se arma el ejército de un país para un año cualquiera a partir de Correlates of War: militares * proporcion_ejercito * proporcion_en_brigadas / efectivos_por_brigada = brigadas. Prototipo: después se reemplaza por los registros reales de cada país donde existan.",
+  "estimacion": {
+    "proporcion_ejercito": 0.6,
+    "proporcion_en_brigadas": 0.45,
+    "efectivos_por_brigada": 4000,
+    "mecanizacion": { "desde_anio": 1935, "hasta_anio": 1990, "maximo": 0.35 },
+    "parte_blindada": 0.4,
+    "montana_por_terreno": 0.8,
+    "montana_maximo": 0.4,
+    "brigadas_por_cuerpo": 4,
+    "peso_capital": 3,
+    "peso_frontera_rival": 2,
+    "peso_poblacion": 1
+  },
+
+  "_reclutamiento_comentario": "Mano de obra. por_anio = parte de la población que entra por año. entrenamiento va de 0 a 1.",
+  "reclutamiento": {
+    "servicio_militar": { "nombre": "Servicio militar obligatorio", "por_anio": 0.004, "entrenamiento": 0.45, "dias_formacion": 90 },
+    "voluntarios":      { "nombre": "Voluntarios", "por_anio": 0.0008, "entrenamiento": 0.65, "dias_formacion": 120 },
+    "reserva_inicial_meses": 4,
+    "refuerzos_por_dia": 120
+  },
+
+  "recuperacion": {
+    "organizacion_por_hora": 0.01,
+    "atrincheramiento_por_dia": 0.02,
+    "atrincheramiento_maximo": 0.4,
+    "moral_por_dia": 0.01
+  },
+
+  "generales": {
+    "xp_por_fase": 1,
+    "xp_por_nivel": [0, 3, 8, 15, 25],
+    "probabilidad_muerte_por_fase": 0.005
+  }
+}

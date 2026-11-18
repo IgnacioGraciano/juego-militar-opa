@@ -181,5 +181,53 @@
     "AR-B": "Province",
     "FK-X01~": "Colonia británica",
     "GS-X01~": "Dependencia británica"
+  },
+  "_terreno_comentario": "Terreno de cada provincia (llanura, ciudad, selva, montaña). Se calcula con las regiones geográficas de Natural Earth: montaña si al menos 'fraccion_montana' de la provincia está en una cordillera o el Altiplano; selva si al menos 'fraccion_selva' está en la Amazonia, las Guayanas, las Yungas o el Pantanal; ciudad si es chica y tiene una ciudad grande. 'terreno_manual' pisa el cálculo.",
+  "terreno": {
+    "regiones_montana": [
+      "ANDES",
+      "CORDILLERA OCCIDENTAL",
+      "CORDILLERA  REAL",
+      "CORDILLERA ORIENTAL",
+      "CORD. CENTRAL",
+      "CORD. OCCIDENTAL",
+      "ALTIPLANO"
+    ],
+    "regiones_selva": [
+      "AMAZON BASIN",
+      "SELVAS",
+      "YUNGAS",
+      "GUIANA SHIELD",
+      "PANTANAL"
+    ],
+    "fraccion_montana": 0.35,
+    "fraccion_selva": 0.5,
+    "ciudad_area_maxima_km2": 8000,
+    "ciudad_rango_maximo": 3
+  },
+  "terreno_manual": {
+    "CL-RM": "ciudad",
+    "AR-C": "ciudad",
+    "GS-X01~": "montaña",
+    "FK-X01~": "llanura",
+    "BR-GO": "llanura",
+    "AR-V": "llanura",
+    "PE-CAL": "ciudad",
+    "GY-EB": "llanura"
+  },
+  "_conexiones_comentario": "Pasos entre provincias que no comparten frontera en tierra (estrechos con cruce de barcazas). Se usan para mover tropas, más lento.",
+  "conexiones_extra": [
+    {
+      "a": "AR-Z",
+      "b": "AR-V",
+      "tipo": "estrecho",
+      "nota": "Cruce del estrecho de Magallanes"
+    }
+  ],
+  "rios_frontera": {
+    "_comentario": "Una frontera cuenta como río si al menos 'fraccion' de su largo va pegada a un río de rango <= 'rango_maximo'.",
+    "rango_maximo": 6,
+    "fraccion": 0.3,
+    "distancia": 1.5
   }
 }

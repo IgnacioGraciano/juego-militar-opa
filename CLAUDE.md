@@ -21,3 +21,9 @@
 - Coordenadas del mapa: Miller, `escala` unidades por grado (ver `src/geo.js`). Las
   provincias se identifican por índice (orden de `provincias.json`) en tiempo de
   ejecución y por `id` (código ISO 3166-2) en los archivos.
+- Ejércitos: en el prototipo salen de la fórmula de `data/reglas/ejercito.json` con
+  Correlates of War (`data/historico/poder_militar.json`). Decisión de Ignacio para el
+  juego completo: usar los registros reales de cada país; sin registro de ese año,
+  estimar con años anteriores; sin ningún dato, por tamaño y poder militar del país.
+- Todo número de reglas (combate, movimiento, reclutamiento) va en `data/reglas/*.json`,
+  no en el código.

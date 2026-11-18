@@ -89,7 +89,10 @@ export function textoZona() {
 // Posición del sol: {lon, lat} del punto donde está en el cénit.
 // Aproximación suficiente para el día y la noche del mapa.
 export function posicionSol() {
-  const ms = msUtc() + tiempo.fraccion * 3600e3;
+  return posicionSolEn(msUtc() + tiempo.fraccion * 3600e3);
+}
+
+export function posicionSolEn(ms) {
   const f = new Date(ms);
   const inicioAnio = Date.UTC(f.getUTCFullYear(), 0, 1);
   const dia = (ms - inicioAnio) / 86400e3; // días desde el 1 de enero (con decimales)

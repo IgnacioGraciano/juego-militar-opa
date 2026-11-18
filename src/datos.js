@@ -2,7 +2,7 @@
 // Los datos están separados del código: para cambiar países, bases o el
 // escenario se editan los archivos .json, no los scripts.
 
-import { geo, desdeLonLat } from './geo.js';
+import { geo, desdeLonLat, distanciaKm } from './geo.js';
 
 export const datos = {
   limites: { x: 0, y: 0, ancho: 1, alto: 1 },
@@ -22,6 +22,8 @@ export const datos = {
   lagos: [],
   regiones: [],
   escenario: {},
+  reglas: { ejercito: {}, combate: {} },
+  historico: {}, // poder militar por país y año (Correlates of War)
   eventos: new EventTarget(),
 };
 
@@ -68,7 +70,7 @@ function hexARgb(hex) {
 
 export async function cargarDatos(escenario = '1978') {
   const t0 = performance.now();
-  const [paises, geom, prov, ciud, puer, rios, lagos, reg, bases, esc] = await Promise.all([
+  const [paises, geom, prov, ciud, puer, rios, lagos, reg, bases, esc, rEjercito, rCombate, hist] = await Promise.all([
     leerJson('data/paises.json'),
     leerJson('data/mapa/geometria.json'),
     leerJson('data/mapa/provincias.json'),
@@ -79,7 +81,12 @@ export async function cargarDatos(escenario = '1978') {
     leerJson('data/mapa/regiones.json'),
     leerJson('data/bases.json'),
     leerJson(`data/escenarios/${escenario}.json`),
+    leerJson('data/reglas/ejercito.json'),
+    leerJson('data/reglas/combate.json'),
+    leerJson('data/historico/poder_militar.json'),
   ]);
+  datos.reglas = { ejercito: rEjercito, combate: rCombate };
+  datos.historico = hist;
 
   const proy = geom.proyeccion;
   geo.escala = proy.escala;
@@ -110,6 +117,22 @@ export async function cargarDatos(escenario = '1978') {
     };
   });
   datos.indiceProvincia = new Map(datos.provincias.map((p, i) => [p.id, i]));
+
+  // Grafo de provincias vecinas: índice, distancia entre centros (km), río, estrecho.
+  for (const p of datos.provincias) {
+    const rio = new Set(p.vecinos_rio || []);
+    const conexiones = [];
+    const agregar = (id, estrecho) => {
+      const j = datos.indiceProvincia.get(id);
+      if (j === undefined) return;
+      const q = datos.provincias[j];
+      const km = distanciaKm(p.centroPos.x, p.centroPos.y, q.centroPos.x, q.centroPos.y);
+      conexiones.push({ j, km, rio: rio.has(id), estrecho });
+    };
+    for (const id of p.vecinos) agregar(id, false);
+    for (const id of p.vecinos_estrecho || []) agregar(id, true);
+    p.conexiones = conexiones;
+  }
 
   datos.fronteras = geom.fronteras.map((f) => ({ a: f.a, b: f.b, path: aLinea(f.p) }));
 

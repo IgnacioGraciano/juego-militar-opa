@@ -14,6 +14,10 @@
     --bronce: #c9a95c;
     --bronce-claro: #e6cd8a;
     --apagado: #4a4f57;
+    --peligro: #c8503c;
+    --peligro-claro: #f0907c;
+    --bien: #7cc46a;
+    --panel-solido: #0d1117;
     --f-rotulo: "Barlow Condensed", "Arial Narrow", sans-serif;
     --f-texto: "Barlow", "Segoe UI", system-ui, sans-serif;
     --f-dato: "IBM Plex Mono", ui-monospace, "Consolas", monospace;
@@ -54,7 +58,7 @@
     left: max(var(--margen), env(safe-area-inset-left, 0px));
     display: grid;
     gap: 6px;
-    max-width: min(560px, calc(100% - 2 * var(--margen)));
+    max-width: min(440px, calc(100% - 2 * var(--margen)));
   }
   #titulo h1 {
     margin: 0;
@@ -128,7 +132,7 @@
     border-radius: 2px;
   }
   .controles { display: flex; align-items: center; gap: 8px; }
-  .controles button, #cerrar-ficha {
+  .controles button, .cerrar {
     font-family: var(--f-rotulo);
     font-weight: 600;
     font-size: 15px;
@@ -142,8 +146,8 @@
     padding: 0 8px;
     cursor: pointer;
   }
-  .controles button:hover, #cerrar-ficha:hover { border-color: var(--bronce); }
-  .controles button:focus-visible, #cerrar-ficha:focus-visible, .barra:focus-visible {
+  .controles button:hover, .cerrar:hover { border-color: var(--bronce); }
+  .controles button:focus-visible, .cerrar:focus-visible, .barra:focus-visible, .boton:focus-visible {
     outline: 2px solid var(--bronce-claro);
     outline-offset: 2px;
   }
@@ -180,7 +184,7 @@
     line-height: 1.05;
     text-wrap: balance;
   }
-  #ficha-datos {
+  .datos {
     display: grid;
     grid-template-columns: auto 1fr;
     gap: 5px 12px;
@@ -188,8 +192,181 @@
     font-size: 13.5px;
     line-height: 1.4;
   }
-  #ficha-datos dt { font-family: var(--f-rotulo); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; font-size: 12px; color: var(--tenue); padding-top: 2px; }
-  #ficha-datos dd { margin: 0; min-width: 0; }
+  .datos dt { font-family: var(--f-rotulo); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; font-size: 12px; color: var(--tenue); padding-top: 2px; }
+  .datos dd { margin: 0; min-width: 0; }
+
+  /* Resumen del país */
+  #resumen { display: grid; gap: 2px; font-size: 13px; }
+  #resumen .rotulo { font-size: 11px; }
+  #resumen .guerra { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--peligro-claro); }
+  .tenue { color: var(--tenue); }
+
+  /* Botones */
+  .boton {
+    font-family: var(--f-rotulo);
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    color: var(--texto);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--apagado);
+    border-radius: 2px;
+    padding: 6px 10px;
+    cursor: pointer;
+    text-align: left;
+  }
+  .boton:hover:not(:disabled) { border-color: var(--bronce); }
+  .boton:disabled { opacity: 0.45; cursor: not-allowed; }
+  .boton.principal { background: var(--bronce); color: #1a140a; border-color: var(--bronce); }
+  .boton.peligro { border-color: var(--peligro); color: var(--peligro-claro); }
+  .mini {
+    font: 600 12px var(--f-rotulo);
+    color: var(--tenue);
+    background: none;
+    border: 1px solid var(--apagado);
+    border-radius: 2px;
+    padding: 1px 6px;
+    cursor: pointer;
+  }
+  .acciones { display: grid; gap: 8px; margin-top: 12px; }
+  .acciones.fila { display: flex; flex-wrap: wrap; gap: 8px; }
+  .botones-reclutar { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .botones-reclutar .boton { display: grid; gap: 1px; }
+  .botones-reclutar small { font-family: var(--f-dato); font-weight: 500; font-size: 11px; color: inherit; opacity: 0.75; letter-spacing: 0; }
+  .nota { margin: 4px 0 0; font-size: 12px; line-height: 1.45; color: var(--tenue); }
+
+  /* Tropas */
+  #tropas {
+    bottom: calc(var(--margen) + env(safe-area-inset-bottom, 0px));
+    left: max(var(--margen), env(safe-area-inset-left, 0px));
+    width: min(380px, calc(100% - 2 * var(--margen)));
+    max-height: min(70vh, 640px);
+    overflow-y: auto;
+  }
+  #tropas-titulo { margin: 2px 0 4px; font-family: var(--f-rotulo); font-weight: 600; font-size: 22px; line-height: 1.1; }
+  .lista-tropas { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+  .lista-tropas li { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-top: 1px solid rgba(255, 255, 255, 0.07); }
+  .lista-tropas li.no { opacity: 0.6; }
+  .lista-tropas li.ataca .simbolo { border-color: var(--bronce); }
+  .lista-tropas select { font: 500 13px var(--f-texto); color: var(--texto); background: #1a2029; border: 1px solid var(--apagado); border-radius: 2px; padding: 3px; }
+  .simbolo {
+    flex: none;
+    width: 30px;
+    height: 20px;
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    color: #fff;
+    background: var(--pais-jugador, #3d6d93);
+    border: 1px solid #000;
+    border-radius: 1px;
+  }
+  .tropa { flex: 1; min-width: 0; }
+  .tropa-nombre { font-family: var(--f-rotulo); font-weight: 600; font-size: 15px; }
+  .tropa-datos { font-size: 12px; color: var(--tenue); font-variant-numeric: tabular-nums; }
+  .barra-org { height: 3px; margin-top: 4px; background: rgba(255, 255, 255, 0.1); }
+  .barra-org i { display: block; height: 100%; background: var(--bien); }
+  .quitar { background: none; border: 0; color: var(--tenue); font-size: 18px; cursor: pointer; }
+  .cuerpo { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; font-size: 12.5px; color: var(--tenue); }
+  .estrellas { color: var(--bronce); letter-spacing: 1px; }
+
+  /* Planificador */
+  #plan {
+    top: calc(var(--margen) + 132px + env(safe-area-inset-top, 0px));
+    right: max(var(--margen), env(safe-area-inset-right, 0px));
+    bottom: calc(var(--margen) + env(safe-area-inset-bottom, 0px));
+    width: min(420px, calc(100% - 2 * var(--margen)));
+    overflow-y: auto;
+    z-index: 3;
+    padding-bottom: 0;
+  }
+  #plan h2 { margin: 2px 0 0; font-family: var(--f-rotulo); font-weight: 600; font-size: 22px; line-height: 1.1; text-wrap: balance; }
+  #plan section { padding: 10px 0; border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 10px; }
+  #plan h3 { margin: 0 0 6px; font: 600 14px var(--f-rotulo); letter-spacing: 0.06em; text-transform: uppercase; color: var(--bronce-claro); display: flex; gap: 8px; align-items: baseline; }
+  #plan h3 b { margin-left: auto; font-size: 22px; color: var(--texto); }
+  #plan-eje { width: 100%; font: 500 14px var(--f-texto); color: var(--texto); background: #1a2029; border: 1px solid var(--apagado); border-radius: 2px; padding: 5px; }
+  #plan-dias { width: 100%; accent-color: var(--bronce); }
+  .objetivos { display: flex; flex-wrap: wrap; gap: 6px; }
+  .objetivo { display: inline-flex; gap: 6px; align-items: center; padding: 3px 8px; border: 1px solid var(--bronce); border-radius: 2px; font: 600 14px var(--f-rotulo); }
+  .posturas { display: grid; gap: 6px; }
+  .postura { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
+  .postura input { accent-color: var(--bronce); margin-top: 3px; }
+  .postura span { display: grid; }
+  .postura small { color: var(--tenue); font-size: 12px; }
+  .artilleria { display: grid; gap: 4px; margin-top: 8px; font-size: 13px; }
+  .artilleria input { accent-color: var(--bronce); }
+  .factores, .probabilidades { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font-size: 13px; }
+  .factores li { display: grid; grid-template-columns: 1fr 90px; column-gap: 10px; align-items: center; }
+  .factores small { grid-column: 1 / -1; color: var(--tenue); font-size: 11.5px; }
+  .probabilidades li { display: grid; grid-template-columns: 110px 1fr 40px; gap: 8px; align-items: center; }
+  .probabilidades small { text-align: right; font-family: var(--f-dato); font-size: 12px; }
+  .medidor { height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 1px; overflow: hidden; }
+  .medidor i { display: block; height: 100%; background: var(--bronce); }
+  .probabilidades .rechazo i { background: var(--peligro); }
+  .probabilidades .estancamiento i { background: #a8a190; }
+  .probabilidades .avance i { background: var(--bronce); }
+  .probabilidades .ruptura i { background: var(--bien); }
+  .probable { margin: 0 0 8px; font-size: 14px; }
+  .multiplicadores { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; font-size: 12.5px; }
+  .multiplicadores > div > div:not(.rotulo) { display: flex; justify-content: space-between; gap: 6px; padding: 1px 0; color: var(--tenue); }
+  .multiplicadores b { font-family: var(--f-dato); font-weight: 500; color: var(--texto); }
+  .multiplicadores .sube b { color: var(--bien); }
+  .multiplicadores .baja b { color: var(--peligro-claro); }
+  .pegado { position: sticky; bottom: 0; background: var(--panel-solido); padding: 10px 0 12px; margin-top: 4px; }
+
+  /* Operaciones en curso */
+  #lista-operaciones { display: grid; gap: 4px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 8px; }
+  #lista-operaciones .op { font: 500 13px var(--f-texto); text-align: left; color: var(--tenue); background: none; border: 0; padding: 2px 0; cursor: pointer; }
+  #lista-operaciones .op b { color: var(--texto); font-family: var(--f-rotulo); font-size: 14px; }
+  #lista-operaciones .op.espera { color: var(--bronce-claro); }
+
+  /* Decisión entre fases */
+  #decision { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: rgba(5, 8, 12, 0.55); padding: 16px; }
+  .dialogo { position: relative; width: min(460px, 100%); padding: 18px 20px; }
+  .dialogo h2 { margin: 4px 0 6px; font-family: var(--f-rotulo); font-weight: 600; font-size: 28px; line-height: 1.05; }
+  .dialogo p { margin: 0 0 10px; line-height: 1.45; }
+  .dialogo .botones { display: grid; gap: 8px; margin-top: 14px; }
+
+  /* Modo (elegir destino u objetivo) y registro */
+  #modo {
+    position: absolute;
+    top: calc(var(--margen) + env(safe-area-inset-top, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 14px;
+    font: 600 15px var(--f-rotulo);
+    letter-spacing: 0.04em;
+    color: #1a140a;
+    background: var(--bronce);
+    border-radius: 2px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  #registro {
+    position: absolute;
+    right: max(var(--margen), env(safe-area-inset-right, 0px));
+    bottom: calc(var(--margen) + env(safe-area-inset-bottom, 0px));
+    width: min(380px, calc(100% - 2 * var(--margen)));
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 4px;
+    pointer-events: none;
+  }
+  #registro li {
+    font-size: 12.5px;
+    line-height: 1.4;
+    padding: 5px 10px;
+    background: var(--panel);
+    border-left: 3px solid var(--apagado);
+    border-radius: 2px;
+  }
+  #registro li.bueno { border-left-color: var(--bien); }
+  #registro li.malo { border-left-color: var(--peligro); }
+  #registro .cuando { color: var(--tenue); font-family: var(--f-dato); font-size: 11px; }
+  #juego:has(#plan:not([hidden])) #registro { display: none; }
 
   /* Nombre bajo el cursor (abajo al centro) */
   #cursor {
@@ -228,9 +405,13 @@
     #ayuda-tactil { display: block; }
     #titulo h1 { font-size: 18px; }
     #reloj { top: auto; bottom: calc(var(--margen) + env(safe-area-inset-bottom, 0px)); min-width: 0; padding: 8px 10px; }
+    #resumen { display: none; }
     #fecha { font-size: 18px; }
     #ficha { bottom: auto; top: calc(var(--margen) + env(safe-area-inset-top, 0px)); max-height: 55vh; z-index: 2; }
-    #juego:has(#ficha:not([hidden])) #titulo { visibility: hidden; }
+    #juego:has(#ficha:not([hidden])) #titulo, #juego:has(#tropas:not([hidden])) #titulo { visibility: hidden; }
+    #tropas { bottom: auto; top: calc(var(--margen) + env(safe-area-inset-top, 0px)); max-height: 55vh; z-index: 2; }
+    #plan { top: 30vh; }
+    #registro { display: none; }
     #cursor { display: none; }
   }
   @media (max-width: 760px) and (pointer: fine) {
@@ -247,10 +428,11 @@
     <div class="rotulo" id="escenario">Escenario</div>
     <h1>Sudamérica 1978</h1>
     <div><span class="pais-chip" id="pais-jugador">Argentina</span></div>
+    <div id="resumen"></div>
     <p id="ayuda">
-      <span id="ayuda-raton"><kbd>Rueda</kbd> zoom · <kbd>Arrastrar</kbd> o <kbd>WASD</kbd> mover · <kbd>Clic</kbd> elegir provincia<br>
-      <kbd>Espacio</kbd> pausa · <kbd>1</kbd>–<kbd>5</kbd> velocidad · <kbd>N</kbd> noche · <kbd>Esc</kbd> cerrar ficha</span>
-      <span id="ayuda-tactil">Arrastrá para mover, pellizcá para acercar y tocá una provincia para ver su ficha.</span>
+      <span id="ayuda-raton"><kbd>Clic</kbd> en una ficha elige tropas · <kbd>Clic derecho</kbd> las mueve o ataca<br>
+      <kbd>Rueda</kbd> zoom · <kbd>WASD</kbd> mapa · <kbd>Espacio</kbd> pausa · <kbd>1</kbd>–<kbd>5</kbd> velocidad · <kbd>N</kbd> noche</span>
+      <span id="ayuda-tactil">Tocá una ficha para elegir tropas y usá los botones del panel para moverlas o atacar.</span>
     </p>
   </header>
 
@@ -266,6 +448,7 @@
       <button id="mas" type="button" title="Más rápido (+)" aria-label="Más rápido">+</button>
       <span id="velocidad">Vel. 3</span>
     </div>
+    <div id="lista-operaciones" hidden></div>
   </section>
 
   <aside id="ficha" class="panel" hidden aria-live="polite">
@@ -275,10 +458,80 @@
         <h2 id="ficha-nombre"></h2>
         <span class="pais-chip" id="ficha-pais"></span>
       </div>
-      <button id="cerrar-ficha" type="button" aria-label="Cerrar ficha" title="Cerrar (Esc)">×</button>
+      <button id="cerrar-ficha" class="cerrar" type="button" aria-label="Cerrar ficha" title="Cerrar (Esc)">×</button>
     </div>
-    <dl id="ficha-datos"></dl>
+    <dl id="ficha-datos" class="datos"></dl>
+    <div id="ficha-acciones" class="acciones"></div>
   </aside>
+
+  <aside id="tropas" class="panel" hidden>
+    <div class="ficha-cabeza">
+      <div>
+        <div class="rotulo">Tropas elegidas</div>
+        <h2 id="tropas-titulo"></h2>
+      </div>
+      <button id="cerrar-tropas" class="cerrar" type="button" aria-label="Soltar tropas" title="Soltar (Esc)">×</button>
+    </div>
+    <ul id="tropas-lista" class="lista-tropas"></ul>
+    <div id="tropas-cuerpos"></div>
+    <div class="acciones fila">
+      <button id="tropas-mover" type="button" class="boton">Mover</button>
+      <button id="tropas-atacar" type="button" class="boton principal">Atacar…</button>
+    </div>
+    <p class="nota" id="tropas-ayuda">Clic derecho en una provincia para moverlas. En una provincia enemiga con tropas, ataca con la plantilla rápida.</p>
+  </aside>
+
+  <aside id="plan" class="panel" hidden aria-labelledby="plan-titulo">
+    <div class="ficha-cabeza">
+      <div>
+        <div class="rotulo">Planificar operación</div>
+        <h2 id="plan-titulo"></h2>
+      </div>
+      <button id="plan-cerrar" class="cerrar" type="button" aria-label="Cancelar plan">×</button>
+    </div>
+    <section>
+      <h3>1 · Objetivo</h3>
+      <div id="plan-objetivos" class="objetivos"></div>
+      <p class="nota">Clic en provincias enemigas para sumar objetivos para la explotación.</p>
+    </section>
+    <section>
+      <h3><label for="plan-eje">2 · Eje principal</label></h3>
+      <select id="plan-eje"></select>
+    </section>
+    <section>
+      <h3>3 · Fuerzas y reservas</h3>
+      <ul id="plan-fuerzas" class="lista-tropas"></ul>
+    </section>
+    <section>
+      <h3>4 · Postura</h3>
+      <div id="plan-posturas" class="posturas"></div>
+    </section>
+    <section>
+      <h3><label for="plan-dias">5 · Preparación</label> <span id="plan-dias-valor" class="tenue"></span></h3>
+      <input id="plan-dias" type="range" min="0" max="30" step="1">
+      <p class="nota">Más días dan más fuerza (reconocimiento, artillería en posición) pero el enemigo puede detectar la concentración.</p>
+      <div class="artilleria">
+        <label><input id="plan-art-preparacion" type="checkbox"> Artillería en la preparación</label>
+        <label><input id="plan-art-ruptura" type="checkbox"> Artillería en la ruptura</label>
+      </div>
+    </section>
+    <section class="calidad">
+      <h3>Calidad del plan <b id="plan-calidad"></b></h3>
+      <ul id="plan-factores" class="factores"></ul>
+    </section>
+    <section>
+      <h3>Predicción</h3>
+      <div id="plan-prediccion"></div>
+    </section>
+    <div class="acciones fila pegado">
+      <button id="plan-lanzar" type="button" class="boton principal">Lanzar operación</button>
+      <button id="plan-rapida" type="button" class="boton" title="Ataca ya, sin preparación. Calidad del plan con tope de 60 %.">Plantilla rápida</button>
+    </div>
+  </aside>
+
+  <div id="modo" hidden></div>
+  <ol id="registro" hidden aria-live="polite"></ol>
+  <div id="decision" hidden></div>
 
   <div id="cursor" hidden></div>
   <div id="carga">Cargando el mapa…</div>

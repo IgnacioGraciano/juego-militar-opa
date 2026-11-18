@@ -1,9 +1,42 @@
 {
-  "_comentario": "Escenario: fecha de inicio, país del jugador y cambios de dueño de provincias respecto del país de origen (duenos: id de provincia -> país).",
+  "_comentario": "Escenario: fecha de inicio, país del jugador, cambios de dueño de provincias (duenos: id de provincia -> país), ley de reclutamiento de cada país, rivales (donde se ubican las tropas al empezar) y guarniciones de países cuyo territorio principal está fuera del mapa.",
+  "fuente": "Elaboración propia. Ejércitos: estimación por fórmula (data/reglas/ejercito.json) con datos de Correlates of War; a reemplazar por el orden de batalla real de 1978.",
   "nombre": "1978 — Crisis del Beagle",
   "fecha_inicio": "1978-01-01",
   "hora_inicio": 8,
   "zona_horaria": -3,
   "pais_jugador": "ARG",
-  "duenos": {}
+  "duenos": {},
+
+  "reclutamiento": {
+    "ARG": "servicio_militar", "CHL": "servicio_militar", "BRA": "servicio_militar",
+    "URY": "servicio_militar", "PRY": "servicio_militar", "BOL": "servicio_militar",
+    "PER": "servicio_militar", "ECU": "servicio_militar", "COL": "servicio_militar",
+    "VEN": "servicio_militar", "GUY": "voluntarios", "SUR": "voluntarios",
+    "GBR": "voluntarios", "FRA": "servicio_militar"
+  },
+
+  "rivales": {
+    "ARG": ["CHL", "BRA", "GBR"],
+    "CHL": ["ARG", "PER", "BOL"],
+    "PER": ["CHL", "ECU"],
+    "BOL": ["CHL", "PRY"],
+    "ECU": ["PER"],
+    "BRA": ["ARG"],
+    "VEN": ["COL", "GUY"],
+    "COL": ["VEN"],
+    "GUY": ["VEN", "SUR"],
+    "SUR": ["GUY"],
+    "PRY": ["BOL"]
+  },
+
+  "_guarniciones_comentario": "Países con su territorio principal fuera del mapa: en vez de la fórmula se ponen estas tropas.",
+  "guarniciones": {
+    "GBR": [
+      { "provincia": "FK-MAL", "tipo": "infanteria", "nombre": "Naval Party 8901 (Royal Marines)", "efectivos": 70, "entrenamiento": 0.85 }
+    ],
+    "FRA": [
+      { "provincia": "FR-GF", "tipo": "infanteria", "nombre": "3.er Regimiento Extranjero de Infantería", "efectivos": 1200, "entrenamiento": 0.75 }
+    ]
+  }
 }

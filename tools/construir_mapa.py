@@ -258,6 +258,7 @@ def cargar_provincias():
         p = base["props"]
         nombre = CFG["nombres"].get(d) or p.get("name") or p.get("name_es") or d
         provincias.append({
+            "clave": d,
             "id": CFG["ids"].get(d, d),
             "nombre": nombre,
             "pais": base["pais"],
@@ -359,6 +360,88 @@ def procesar_provincias(provincias):
             **({"incluye": q["fusionadas"]} if q["fusionadas"] else {}),
         })
     return limpias, geometria, fronteras, datos, tierra_ajena
+
+
+# ---------------------------------------------------------------- terreno y ríos
+def agregar_terreno_y_rios(provincias, datos_prov, fronteras, ciudades, rios):
+    """Agrega a cada provincia: terreno, vecinos separados por un río y pasos por estrecho."""
+    ct = CFG["terreno"]
+    regiones = descargar("ne_10m_geography_regions_polys")
+    montana, selva = [], []
+    for f in regiones["features"]:
+        n = f["properties"].get("NAME")
+        if f["properties"].get("REGION") != "South America":
+            continue
+        if n in ct["regiones_montana"]:
+            montana.append(shapely.make_valid(shape(f["geometry"])))
+        elif n in ct["regiones_selva"]:
+            selva.append(shapely.make_valid(shape(f["geometry"])))
+    montana = shapely.union_all(montana)
+    selva = shapely.union_all(selva)
+    grandes = {}
+    for c in ciudades["ciudades"]:
+        if c["rango"] <= ct["ciudad_rango_maximo"]:
+            grandes[c["provincia"]] = True
+    manual = CFG.get("terreno_manual", {})
+    for q, dp in zip(provincias, datos_prov):
+        g = q["geom_lonlat"]
+        area = g.area or 1.0
+        f_mont = g.intersection(montana).area / area
+        f_selva = g.intersection(selva).area / area
+        if dp["id"] in manual or q["clave"] in manual:
+            t = manual.get(dp["id"]) or manual.get(q["clave"])
+        elif dp["area_km2"] <= ct["ciudad_area_maxima_km2"] and grandes.get(dp["id"]):
+            t = "ciudad"
+        elif f_mont >= ct["fraccion_montana"]:
+            t = "montaña"
+        elif f_selva >= ct["fraccion_selva"]:
+            t = "selva"
+        else:
+            t = "llanura"
+        dp["terreno"] = t
+
+    # Fronteras que van por un río grande
+    cr = CFG["rios_frontera"]
+    lineas_rio = []
+    for r in rios["rios"]:
+        if r["rango"] <= cr["rango_maximo"]:
+            pts = r["p"]
+            lineas_rio.append(LineString(list(zip(pts[0::2], pts[1::2]))))
+    zona_rio = shapely.union_all(lineas_rio).buffer(cr["distancia"])
+    largo = {}
+    sobre_rio = {}
+    for f in fronteras:
+        if f["b"] < 0:
+            continue
+        pts = f["p"]
+        l = LineString(list(zip(pts[0::2], pts[1::2])))
+        par = (min(f["a"], f["b"]), max(f["a"], f["b"]))
+        largo[par] = largo.get(par, 0.0) + l.length
+        sobre_rio[par] = sobre_rio.get(par, 0.0) + l.intersection(zona_rio).length
+    for dp in datos_prov:
+        dp["vecinos_rio"] = []
+        dp["vecinos_estrecho"] = []
+    for (a, b), L in largo.items():
+        if L > 0 and sobre_rio[(a, b)] / L >= cr["fraccion"]:
+            datos_prov[a]["vecinos_rio"].append(datos_prov[b]["id"])
+            datos_prov[b]["vecinos_rio"].append(datos_prov[a]["id"])
+
+    # Pasos por estrecho
+    por_id = {dp["id"]: dp for dp in datos_prov}
+    por_clave = {q["clave"]: dp for q, dp in zip(provincias, datos_prov)}
+    for c in CFG.get("conexiones_extra", []):
+        a = por_id.get(c["a"]) or por_clave.get(c["a"])
+        b = por_id.get(c["b"]) or por_clave.get(c["b"])
+        if a is None or b is None:
+            raise SystemExit(f"Conexión con provincia desconocida: {c}")
+        a["vecinos_estrecho"].append(b["id"])
+        b["vecinos_estrecho"].append(a["id"])
+    for dp in datos_prov:
+        dp["vecinos_rio"].sort()
+    cuenta = {}
+    for dp in datos_prov:
+        cuenta[dp["terreno"]] = cuenta.get(dp["terreno"], 0) + 1
+    print("Terreno:", cuenta, "| fronteras de río:", sum(len(d["vecinos_rio"]) for d in datos_prov) // 2)
 
 
 # ---------------------------------------------------------------- puntos
@@ -596,6 +679,7 @@ def main():
     rios = procesar_rios(region_juego)
     lagos = procesar_lagos(region_juego)
     regiones = procesar_regiones()
+    agregar_terreno_y_rios(provincias, datos_prov, fronteras, ciudades, rios)
 
     print("Relieve ...")
     ancho, alto = construir_relieve(geoms, tierra_ajena)
