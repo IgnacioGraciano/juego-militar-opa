@@ -10,7 +10,7 @@ Fuentes (se descargan solas la primera vez y quedan en tools/.cache/):
     basemap-data de PyPI, que lo trae en 1/30 de grado por píxel.
 
 Salida (no editar a mano: se pisa cada vez que se corre el script):
-  data/mapa/geometria.json   triángulos y fronteras de cada provincia
+  data/mapa/geometria.json   contornos y fronteras de cada provincia
   data/mapa/provincias.json  nombre, país, área, vecinos de cada provincia
   data/mapa/ciudades.json, puertos.json, rios.json, lagos.json, regiones.json
   assets/mapa/relieve.jpg    imagen de relieve ya proyectada
@@ -21,7 +21,7 @@ Uso:
 
 Proyección: Miller cilíndrica. x = lon * escala, y = -miller(lat) * escala,
 con escala = unidades del mapa por grado (30 = 1 píxel del relieve).
-El juego usa exactamente la misma fórmula (scripts/mapa/geo.gd).
+El juego usa exactamente la misma fórmula (src/geo.js).
 """
 from __future__ import annotations
 
@@ -176,25 +176,15 @@ def area_km2(geom_lonlat) -> float:
     return total
 
 
-def triangular(geom) -> tuple[list[float], list[int]]:
-    """Triangula polígonos (con agujeros) y devuelve vértices planos + índices."""
-    verts: list[tuple[float, float]] = []
-    indice: dict[tuple[float, float], int] = {}
-    idx: list[int] = []
+def anillos(geom, dec=1) -> list[list[float]]:
+    """Contornos de cada polígono (exterior y agujeros), como listas planas x,y,x,y...
+    Se dibujan y se prueban con la regla par-impar, así los agujeros quedan vacíos."""
+    out = []
     for p in poligonos(geom):
-        tris = shapely.constrained_delaunay_triangles(p)
-        for t in getattr(tris, "geoms", []):
-            cs = list(t.exterior.coords)[:3]
-            ids = []
-            for x, y in cs:
-                key = (round(x, 2), round(y, 2))
-                if key not in indice:
-                    indice[key] = len(verts)
-                    verts.append(key)
-                ids.append(indice[key])
-            if len(set(ids)) == 3:
-                idx.extend(ids)
-    return plano(verts), idx
+        out.append(plano(p.exterior.coords[:-1], dec))
+        for h in p.interiors:
+            out.append(plano(h.coords[:-1], dec))
+    return out
 
 
 def punto_etiqueta(geom):
@@ -271,7 +261,7 @@ def cargar_provincias():
             "id": CFG["ids"].get(d, d),
             "nombre": nombre,
             "pais": base["pais"],
-            "tipo": p.get("type_en") or "",
+            "tipo": CFG.get("tipos", {}).get(d) or p.get("type_en") or "",
             "geom_lonlat": geom,
             "fusionadas": sorted(m for m in miembros if m != d),
         })
@@ -331,7 +321,7 @@ def procesar_provincias(provincias):
             for l in ls:
                 compartidas[i].append(l)
                 compartidas[j].append(l)
-                fronteras.append({"a": i, "b": j, "p": plano(l.coords)})
+                fronteras.append({"a": i, "b": j, "p": plano(l.coords, 1)})
     costeras = [False] * len(limpias)
     for i in range(len(limpias)):
         resto = bordes[i]
@@ -345,18 +335,17 @@ def procesar_provincias(provincias):
             mar = l.difference(tierra_ajena)
             for t in lineas(ajeno):
                 if t.length >= 0.3:
-                    fronteras.append({"a": i, "b": -2, "p": plano(t.coords)})
+                    fronteras.append({"a": i, "b": -2, "p": plano(t.coords, 1)})
             for t in lineas(mar):
                 if t.length >= 0.3:
-                    fronteras.append({"a": i, "b": -1, "p": plano(t.coords)})
+                    fronteras.append({"a": i, "b": -1, "p": plano(t.coords, 1)})
                     if t.length >= 1.0:
                         costeras[i] = True
 
     geometria = []
     datos = []
     for i, (q, g) in enumerate(zip(provincias, limpias)):
-        v, idx = triangular(g)
-        geometria.append({"id": q["id"], "v": v, "i": idx})
+        geometria.append({"id": q["id"], "anillos": anillos(g)})
         c = punto_etiqueta(g)
         datos.append({
             "id": q["id"],
@@ -481,10 +470,8 @@ def procesar_lagos(region_juego):
         g = g.simplify(0.15)
         if g.area < 1.0:
             continue
-        v, idx = triangular(g)
-        bordes = [plano(p_.exterior.coords, 1) for p_ in poligonos(g)]
         out.append({"nombre": p.get("name") or "", "rango": int(p["scalerank"]),
-                    "v": v, "i": idx, "borde": bordes})
+                    "anillos": anillos(g)})
     print("Lagos:", len(out))
     return {"fuente": FUENTE_NE + " (lakes)", "lagos": out}
 
@@ -554,6 +541,30 @@ def construir_relieve(provincias_proj, tierra_ajena):
     m_ajena = mascara([tierra_ajena.buffer(-1.0)]) * (1 - m_juego)
     tierra = np.clip(m_juego + m_ajena, 0, 1)
 
+    # El relieve original tiene un halo claro en el mar junto a la costa. Donde la
+    # máscara dice "tierra" pero el píxel es de ese halo (azulado), se usa el color
+    # de la tierra vecina. Solo cerca de la costa, para no tocar glaciares.
+    agua = (img[:, :, 2] > img[:, :, 0] + 12)[:, :, None] & (tierra > 0.5)
+    cerca_costa = np.zeros_like(tierra, dtype=bool)
+    mar = tierra < 0.5
+    for dy in range(-5, 6):
+        for dx in range(-5, 6):
+            cerca_costa |= np.roll(np.roll(mar, dy, axis=0), dx, axis=1)
+    malo = agua & cerca_costa
+    for _ in range(8):
+        if not malo.any():
+            break
+        bueno = (~malo) & (tierra > 0.5)
+        suma = np.zeros_like(img)
+        cuenta = np.zeros_like(tierra)
+        for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, 1), (-1, 1), (1, -1)):
+            b_ = np.roll(np.roll(bueno, dy, axis=0), dx, axis=1)
+            suma += np.roll(np.roll(img, dy, axis=0), dx, axis=1) * b_
+            cuenta += b_
+        arreglable = malo & (cuenta > 0)
+        img = np.where(arreglable, suma / np.maximum(cuenta, 1), img)
+        malo = malo & ~arreglable
+
     gris = img.mean(axis=2, keepdims=True)
     # Tierra del juego: un poco desaturada para que se lean los colores de país
     t_juego = gris + (img - gris) * 0.75
@@ -592,7 +603,7 @@ def main():
     print("Escribiendo ...")
     proyeccion = {"tipo": "miller", "escala": K,
                   "limites": [round(X0, 2), round(Y0, 2), round(X1, 2), round(Y1, 2)],
-                  "relieve": {"archivo": "res://assets/mapa/relieve.jpg", "ancho": ancho, "alto": alto,
+                  "relieve": {"archivo": "assets/mapa/relieve.jpg", "ancho": ancho, "alto": alto,
                               "fuente": FUENTE_RELIEVE}}
     escribir("geometria.json", {
         "_aviso": "Generado por tools/construir_mapa.py. No editar a mano.",

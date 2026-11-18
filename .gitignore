@@ -1,7 +1,4 @@
-# Godot
-.godot/
-*.translation
-export_presets.cfg
+# Local
 /build/
 
 # Datos descargados por tools/construir_mapa.py

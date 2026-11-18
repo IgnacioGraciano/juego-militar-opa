@@ -1,10 +1,11 @@
 # Juego de estrategia — Sudamérica 1978-1982
 
-Estrategia de guerra para PC, un jugador. El diseño completo está en
+Estrategia de guerra para un jugador. El diseño completo está en
 [`docs/guion_de_diseno.pdf`](docs/guion_de_diseno.pdf).
 
-Motor: **Godot 4** (GDScript). Los datos (países, provincias, bases, escenarios)
-están en archivos `.json` dentro de `data/`, separados del código.
+El juego es una página web (HTML + JavaScript, sin instalar nada). Los datos
+(países, provincias, bases, escenarios) están en archivos `.json` dentro de
+`data/`, separados del código.
 
 ## Estado
 
@@ -12,8 +13,8 @@ Orden de construcción del guion. Cada paso termina con algo que se puede probar
 
 | Paso | Qué | Estado |
 |---|---|---|
-| 1 | Mapa: relieve, provincias, zoom, cámara | **Hecho, falta probar en Godot** |
-| 2 | Tiempo: pausa y velocidades | **Hecho, falta probar en Godot** (día y noche incluidos; clima no) |
+| 1 | Mapa: relieve, provincias, zoom, cámara | Hecho |
+| 2 | Tiempo: pausa y velocidades | Hecho (con día y noche; el clima queda pendiente) |
 | 3 | Brigadas: crear, mover, mostrar en el mapa | — |
 | 4 | Combate y Operaciones básicas | — |
 | 5 | Suministro | — |
@@ -25,32 +26,32 @@ Orden de construcción del guion. Cada paso termina con algo que se puede probar
 | 11 | IA | — |
 | 12 | Interfaz, sonido, guardar y cargar | — |
 
-## Cómo probarlo
+Hasta el paso 2 incluido se usó Godot; desde ahí el juego es web, así se puede
+probar en el navegador antes de cada entrega.
 
-1. Descargar **Godot 4.3 o más nuevo** (versión estándar, no la .NET) de
-   <https://godotengine.org/download>. No se instala: es un solo ejecutable.
-2. Abrir Godot → **Importar** → elegir el archivo `project.godot` de esta carpeta.
-3. La primera vez tarda unos segundos en importar la imagen de relieve.
-4. Apretar **F5** (o el botón ▶ arriba a la derecha) para jugar.
+## Cómo jugar
+
+Abrir el enlace del juego publicado en claude.ai. No hace falta instalar nada.
+
+Para correrlo en la compu (por ejemplo para programarlo):
+
+```bash
+python3 tools/servidor_local.py
+```
+
+y abrir <http://localhost:8000>.
 
 ### Controles
 
-| Acción | Tecla / mouse |
-|---|---|
-| Zoom | Rueda del mouse (acerca hacia donde apunta el cursor) |
-| Mover el mapa | Arrastrar con botón derecho o del medio, o WASD / flechas |
-| Elegir provincia | Clic izquierdo (Esc para soltar) |
-| Pausa | Espacio |
-| Velocidad | 1 a 5, o + y − |
-| Noche on/off | N |
-
-### Qué revisar (paso 1 y 2)
-
-- De lejos: relieve suave, color de cada país translúcido, fronteras finas, nombres de países y capitales.
-- De cerca: aparecen los límites de provincias con sus nombres, ríos chicos, más ciudades, puertos y bases.
-- Al pasar el mouse se resalta la provincia; al hacer clic se abre su ficha abajo a la izquierda.
-- Con el tiempo andando, la sombra de la noche cruza el mapa. Velocidad 3 = 4 segundos por día.
-- Si algo se ve mal o aparece un error en la pestaña **Salida** de Godot, copiar el texto del error.
+| Acción | Mouse / teclado | Celular |
+|---|---|---|
+| Zoom | Rueda (acerca hacia el cursor) | Pellizcar |
+| Mover el mapa | Arrastrar, o WASD / flechas | Arrastrar |
+| Ver una provincia | Clic | Tocar |
+| Pausa | Espacio | Botón Seguir / Pausa |
+| Velocidad | 1 a 5, o + y − | Barras de velocidad |
+| Noche on/off | N | — |
+| Cerrar ficha | Esc | × |
 
 ## Datos del mapa
 
@@ -62,14 +63,13 @@ pip install shapely numpy pillow
 python3 tools/construir_mapa.py
 ```
 
-La configuración (región, países, provincias fusionadas para 1978, nombres)
-está en `tools/config_mapa.json`. Detalles:
+La configuración (región, países, provincias fusionadas para 1978, nombres,
+correcciones) está en `tools/config_mapa.json`.
 
 - **Proyección:** Miller cilíndrica, 30 unidades del mapa por grado. La misma
-  fórmula está en `tools/construir_mapa.py` y en `scripts/mapa/geo.gd`.
+  fórmula está en `tools/construir_mapa.py` y en `src/geo.js`.
 - **Provincias de 1978:** las creadas después se juntan con la provincia de la
-  que salieron (Arica y Parinacota, Ñuble, Los Ríos, Tocantins, etc.). La lista
-  está en `fusiones_1978`.
+  que salieron (Arica y Parinacota, Ñuble, Los Ríos, Tocantins, etc.).
 - **Malvinas y Georgias del Sur** empiezan como británicas.
 - Cada archivo guarda de qué fuente salieron sus datos (`"fuente"`).
 
@@ -83,20 +83,10 @@ Datos escritos a mano (se pueden editar directo):
 ## Estructura
 
 ```
-project.godot          proyecto de Godot
-scenes/principal.tscn  escena principal (arma todo desde código)
-scripts/autoload/      Datos (carga los .json) y Tiempo (reloj del juego)
-scripts/mapa/          mapa, cámara, fronteras, ríos, etiquetas, proyección
-scripts/ui/            interfaz
-shaders/               color de provincias y sombra de la noche
-data/                  datos del juego (.json)
-assets/                imágenes
-tools/                 scripts de Python que generan los datos (Godot los ignora)
-docs/                  guion de diseño
+index.html        página del juego (estructura y estilos)
+src/              código: datos, mapa, cámara, tiempo, etiquetas, interfaz
+data/             datos del juego (.json)
+assets/           imágenes
+tools/            generador de datos y servidor local (Python)
+docs/             guion de diseño
 ```
-
-## Exportar el juego
-
-Al crear un perfil de exportación en Godot, agregar `*.json` en
-**Recursos → Filtros para exportar archivos que no son recursos**, si no el
-juego exportado no encuentra los datos.

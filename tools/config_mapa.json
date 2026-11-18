@@ -175,5 +175,11 @@
       "lat": 5.83
     }
   ],
-  "_ids_comentario": "Ids a mano para provincias sin código ISO propio. Clave 'PAÍS-nombre' cuando el código ISO está repetido en Natural Earth."
+  "_ids_comentario": "Ids a mano para provincias sin código ISO propio. Clave 'PAÍS-nombre' cuando el código ISO está repetido en Natural Earth.",
+  "_tipos_comentario": "Correcciones del tipo de provincia (Natural Earth marca mal algunas).",
+  "tipos": {
+    "AR-B": "Province",
+    "FK-X01~": "Colonia británica",
+    "GS-X01~": "Dependencia británica"
+  }
 }
