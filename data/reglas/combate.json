@@ -1,23 +1,76 @@
 {
   "_comentario": "Reglas del combate y las Operaciones (guion: Combate y Operaciones). Ventaja = raíz(P_ataque / P_defensa) x Azar(azar_min a azar_max). Los valores se ajustan probando.",
   "fuente": "Reglas del juego (elaboración propia)",
-
   "azar_min": 0.8,
   "azar_max": 1.2,
   "resultados": [
-    { "hasta": 0.8, "clave": "rechazo", "nombre": "Rechazo", "texto": "El ataque fracasa: el atacante pierde mucho y no avanza." },
-    { "hasta": 1.2, "clave": "estancamiento", "nombre": "Estancamiento", "texto": "Desgaste para los dos lados, sin avance." },
-    { "hasta": 1.6, "clave": "avance", "nombre": "Avance lento", "texto": "Se gana la provincia con bajas, sin abrir paso para explotar." },
-    { "hasta": 999, "clave": "ruptura", "nombre": "Ruptura", "texto": "Se rompe la defensa: se abre la fase de explotación." }
+    {
+      "hasta": 0.8,
+      "clave": "rechazo",
+      "nombre": "Rechazo",
+      "texto": "El ataque fracasa: el atacante pierde mucho y no avanza."
+    },
+    {
+      "hasta": 1.2,
+      "clave": "estancamiento",
+      "nombre": "Estancamiento",
+      "texto": "Desgaste para los dos lados, sin avance."
+    },
+    {
+      "hasta": 1.6,
+      "clave": "avance",
+      "nombre": "Avance lento",
+      "texto": "Se gana la provincia con bajas, sin abrir paso para explotar."
+    },
+    {
+      "hasta": 999,
+      "clave": "ruptura",
+      "nombre": "Ruptura",
+      "texto": "Se rompe la defensa: se abre la fase de explotación."
+    }
   ],
-
   "terreno": {
-    "llanura": { "ancho_frente": 6, "defensa": 1.0, "tipos": { "blindada": 1.0, "mecanizada": 1.0, "montana": 0.9, "infanteria": 1.0 } },
-    "ciudad":  { "ancho_frente": 4, "defensa": 1.4, "tipos": { "blindada": 0.6, "mecanizada": 0.75, "montana": 1.0, "infanteria": 1.1 } },
-    "selva":   { "ancho_frente": 3, "defensa": 1.3, "tipos": { "blindada": 0.5, "mecanizada": 0.6, "montana": 1.1, "infanteria": 1.0 } },
-    "montaña": { "ancho_frente": 2, "defensa": 1.6, "tipos": { "blindada": 0.5, "mecanizada": 0.6, "montana": 1.5, "infanteria": 0.9 } }
+    "llanura": {
+      "ancho_frente": 6,
+      "defensa": 1.0,
+      "tipos": {
+        "blindada": 1.0,
+        "mecanizada": 1.0,
+        "montana": 0.9,
+        "infanteria": 1.0
+      }
+    },
+    "ciudad": {
+      "ancho_frente": 4,
+      "defensa": 1.4,
+      "tipos": {
+        "blindada": 0.6,
+        "mecanizada": 0.75,
+        "montana": 1.0,
+        "infanteria": 1.1
+      }
+    },
+    "selva": {
+      "ancho_frente": 3,
+      "defensa": 1.3,
+      "tipos": {
+        "blindada": 0.5,
+        "mecanizada": 0.6,
+        "montana": 1.1,
+        "infanteria": 1.0
+      }
+    },
+    "montaña": {
+      "ancho_frente": 2,
+      "defensa": 1.6,
+      "tipos": {
+        "blindada": 0.5,
+        "mecanizada": 0.6,
+        "montana": 1.5,
+        "infanteria": 0.9
+      }
+    }
   },
-
   "rio": 1.2,
   "defensa_propio_suelo": 1.05,
   "conocimiento_terreno": 1.05,
@@ -27,20 +80,56 @@
   "plan_rango": 0.6,
   "general_por_nivel": 0.05,
   "artilleria_ruptura": 1.15,
-
   "posturas": {
-    "frontal":   { "nombre": "Asalto frontal", "texto": "Golpe directo. Más bajas propias.", "ataque": 1.0, "bajas_propias": 1.2, "bajas_enemigas": 1.0 },
-    "cerco":     { "nombre": "Cerco", "texto": "Rodear al enemigo. Rinde si atacás desde dos o más provincias; si no lo pueden retirar, lo destruís.", "ataque": 1.15, "ataque_un_lado": 0.9, "bajas_propias": 1.0, "bajas_enemigas": 1.3 },
-    "desgaste":  { "nombre": "Desgaste con artillería", "texto": "Más lento y con pocas bajas propias. Desgasta la organización enemiga.", "ataque": 0.85, "bajas_propias": 0.6, "bajas_enemigas": 1.0, "desgaste_organizacion": 1.5 },
-    "blindado":  { "nombre": "Avance blindado rápido", "texto": "Rinde con mitad o más de tropas mecanizadas o blindadas en llanura.", "ataque": 1.2, "ataque_sin_condiciones": 0.8, "bajas_propias": 1.0, "bajas_enemigas": 1.0, "explotacion_extra": 1 }
+    "frontal": {
+      "nombre": "Asalto frontal",
+      "texto": "Golpe directo. Más bajas propias.",
+      "ataque": 1.0,
+      "bajas_propias": 1.2,
+      "bajas_enemigas": 1.0
+    },
+    "cerco": {
+      "nombre": "Cerco",
+      "texto": "Rodear al enemigo. Rinde si atacás desde dos o más provincias; si no lo pueden retirar, lo destruís.",
+      "ataque": 1.15,
+      "ataque_un_lado": 0.9,
+      "bajas_propias": 1.0,
+      "bajas_enemigas": 1.3
+    },
+    "desgaste": {
+      "nombre": "Desgaste con artillería",
+      "texto": "Más lento y con pocas bajas propias. Desgasta la organización enemiga.",
+      "ataque": 0.85,
+      "bajas_propias": 0.6,
+      "bajas_enemigas": 1.0,
+      "desgaste_organizacion": 1.5
+    },
+    "blindado": {
+      "nombre": "Avance blindado rápido",
+      "texto": "Rinde con mitad o más de tropas mecanizadas o blindadas en llanura.",
+      "ataque": 1.2,
+      "ataque_sin_condiciones": 0.8,
+      "bajas_propias": 1.0,
+      "bajas_enemigas": 1.0,
+      "explotacion_extra": 1
+    }
   },
-
   "fases": {
-    "preparacion": { "horas": 12, "organizacion_defensor_por_hora_con_artilleria": 0.012, "atrincheramiento_por_hora_con_artilleria": 0.006 },
-    "ruptura": { "horas": 48 },
-    "explotacion": { "horas_por_provincia": 24, "provincias_maximas": 2, "suministro_por_provincia": 0.85, "organizacion_defensor_sorprendido": 0.6 }
+    "preparacion": {
+      "horas": 12,
+      "organizacion_defensor_por_hora_con_artilleria": 0.012,
+      "atrincheramiento_por_hora_con_artilleria": 0.006
+    },
+    "ruptura": {
+      "horas": 48
+    },
+    "explotacion": {
+      "horas_por_provincia": 24,
+      "provincias_maximas": 2,
+      "suministro_por_provincia": 0.85,
+      "organizacion_defensor_sorprendido": 0.6
+    }
   },
-
   "desgaste": {
     "organizacion_atacante_por_hora": 0.012,
     "organizacion_defensor_por_hora": 0.012,
@@ -51,9 +140,10 @@
     "organizacion_minima_para_pelear": 0.1,
     "efectivos_minimos": 0.15
   },
-
-  "deteccion": { "por_dia": 0.06, "por_brigada": 0.015 },
-
+  "deteccion": {
+    "por_dia": 0.06,
+    "por_brigada": 0.015
+  },
   "calidad": {
     "tope_plantilla_rapida": 60,
     "factores": {
@@ -67,6 +157,21 @@
       "general": 15
     }
   },
-
-  "reaccion_defensor": { "trae_reservas": 0.6, "trae_reservas_si_no_detecto": 0.3 }
+  "reaccion_defensor": {
+    "trae_reservas": 0.6,
+    "trae_reservas_si_no_detecto": 0.3
+  },
+  "_guarnicion_comentario": "Defensa territorial: en las provincias propias sin brigadas defiende una guarnición (policía, gendarmería, reservistas locales): efectivos + efectivos_por_100000_km2 según la superficie (hasta efectivos_maximos), el doble en provincias de ciudad o con la capital.",
+  "guarnicion": {
+    "tipo": "infanteria",
+    "efectivos": 1500,
+    "entrenamiento": 0.3,
+    "organizacion": 0.7,
+    "moral": 0.9,
+    "equipo": 0.6,
+    "efectivos_por_100000_km2": 1500,
+    "efectivos_maximos": 6000,
+    "multiplicador_ciudad": 2.0
+  },
+  "_marcha_comentario": "En la explotación, las tropas tardan en llegar a la provincia siguiente: distancia entre centros dividida por la velocidad de marcha de las brigadas móviles."
 }

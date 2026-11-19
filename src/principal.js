@@ -5,7 +5,7 @@ import { datos, cargarDatos, provinciaEn } from './datos.js';
 import { Camara } from './camara.js';
 import { Mapa } from './mapa.js';
 import { dibujarEtiquetas } from './etiquetas.js';
-import { dibujarUnidades, fichaEn } from './unidades.js';
+import { dibujarUnidades, fichaEn, posicionesBrigadas } from './unidades.js';
 import {
   tiempo, iniciarTiempo, avanzarTiempo, alternarPausa, fijarVelocidad, acelerar, frenar, posicionSol,
 } from './tiempo.js';
@@ -25,10 +25,21 @@ import {
   iniciarSuministro, actualizarHoraSuministro, actualizarDiaSuministro, recalcularTodo, construirDeposito,
 } from './suministro.js';
 import {
-  iniciarAviacion, actualizarHoraAviacion, actualizarDiaAviacion, escuadronPorId, modelo as modeloAvion,
+  iniciarAviacion, actualizarHoraAviacion, actualizarDiaAviacion, escuadronPorId, modelo as modeloAvion, basesDe, cambiarBase,
 } from './aviacion.js';
 import { iniciarPanelPais, abrirPais, cerrarPais, paisAbierto, refrescarPais, actualizarBarra } from './panel_pais.js';
-import { iniciarPanelAereo, abrirPaquete, cerrarPaquete, paqueteActual, renderPaquete, mostrarResumenIncursion } from './panel_aereo.js';
+import { iniciarDisenador, actualizarReconversiones } from './disenador.js';
+import { iniciarMarina, actualizarHoraMarina, actualizarDiaMarina, zonaEn, ordenarFlota, flotaPorId } from './marina.js';
+import {
+  iniciarDiplomacia, actualizarHoraDiplomacia, actualizarDiaDiplomacia, declararGuerra as declararConJustificacion,
+} from './diplomacia.js';
+import { actualizarDiaIA } from './ia.js';
+import {
+  iniciarPanelMarina, mostrarFlota, mostrarEvento, mostrarMediacion, mostrarPropuestaPaz, mostrarCombateNaval, mostrarMenuPartida,
+} from './panel_marina.js';
+import {
+  iniciarPanelAereo, abrirPaquete, cerrarPaquete, paqueteActual, renderPaquete, mostrarResumenIncursion, mostrarEscuadron,
+} from './panel_aereo.js';
 
 const ZOOM_INICIAL = 0.6;
 const VELOCIDAD_TECLADO = 900; // píxeles de pantalla por segundo
@@ -49,6 +60,9 @@ const estado = {
   seleccion: new Set(), // ids de brigadas propias elegidas
   provincia: -1, // provincia con la ficha abierta
   rutaVista: null,
+  escuadron: null, // id del escuadrón elegido
+  flota: null, // id de la flota elegida
+  caja: null, // selección con caja: {x0, y0, x1, y1} en pantalla
   alcance: null, // {x, y, km}: círculo de alcance de un escuadrón
   alcanceFijo: false,
 };
@@ -76,15 +90,41 @@ function dibujar() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   dibujarEtiquetas(ctx, camara);
   dibujarUnidades(ctx, camara, {
-    jugador, seleccion: estado.seleccion, plan: planActual(), rutaVista: estado.rutaVista, vista: mapa.vista, alcance: estado.alcance,
+    jugador, seleccion: estado.seleccion, plan: planActual(), rutaVista: estado.rutaVista, vista: mapa.vista, alcance: alcanceVisible(),
+    escuadron: estado.escuadron, flota: estado.flota,
   });
+  if (estado.caja) {
+    const c = estado.caja;
+    const x = Math.min(c.x0, c.x1);
+    const y = Math.min(c.y0, c.y1);
+    ctx.fillStyle = 'rgba(226, 196, 120, 0.12)';
+    ctx.fillRect(x, y, Math.abs(c.x1 - c.x0), Math.abs(c.y1 - c.y0));
+    ctx.strokeStyle = 'rgba(226, 196, 120, 0.95)';
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([5, 3]);
+    ctx.strokeRect(x + 0.5, y + 0.5, Math.abs(c.x1 - c.x0), Math.abs(c.y1 - c.y0));
+    ctx.setLineDash([]);
+  }
+}
+
+// El círculo de alcance: el del escuadrón elegido, o el que se muestra desde un panel.
+function alcanceVisible() {
+  if (estado.alcance) return estado.alcance;
+  const e = estado.escuadron != null ? escuadronPorId(estado.escuadron) : null;
+  if (!e) return null;
+  const b = datos.bases[e.base];
+  return { x: b.x, y: b.y, km: modeloAvion(e.modelo).radio_km };
 }
 
 // ------------------------------------------------------------------ paneles
 
 function refrescarPaneles() {
+  if (estado.escuadron != null && !escuadronPorId(estado.escuadron)) estado.escuadron = null;
+  if (estado.flota != null && !flotaPorId(estado.flota)) estado.flota = null;
   mostrarTropas(estado.seleccion);
-  const conTropas = estado.seleccion.size > 0;
+  mostrarEscuadron(estado.escuadron);
+  mostrarFlota(estado.flota);
+  const conTropas = estado.seleccion.size > 0 || estado.escuadron != null || estado.flota != null;
   if (conTropas) mostrarProvincia(-1);
   else mostrarProvincia(estado.provincia);
   mapa.seleccionada = conTropas ? -1 : estado.provincia;
@@ -98,6 +138,7 @@ function fijarModo(modo) {
   mostrarModo({
     mover: 'Elegí el destino · Esc para cancelar',
     blanco: 'Elegí la provincia enemiga a atacar desde el aire · Esc para cancelar',
+    base: 'Elegí una provincia tuya con base aérea · Esc para cancelar',
     objetivo: 'Elegí la provincia enemiga a atacar · Esc para cancelar',
     plan: null,
     normal: null,
@@ -107,11 +148,33 @@ function fijarModo(modo) {
 
 function elegirProvincia(i) {
   estado.seleccion.clear();
+  estado.escuadron = null;
+  estado.flota = null;
   estado.provincia = i;
   refrescarPaneles();
 }
 
+function elegirFlota(id) {
+  estado.seleccion.clear();
+  estado.provincia = -1;
+  estado.escuadron = null;
+  estado.flota = id;
+  refrescarPaneles();
+}
+
+function elegirEscuadron(id) {
+  estado.seleccion.clear();
+  estado.provincia = -1;
+  estado.flota = null;
+  estado.escuadron = id;
+  estado.alcance = null;
+  estado.alcanceFijo = false;
+  refrescarPaneles();
+}
+
 function elegirTropas(ids, sumar) {
+  estado.escuadron = null;
+  estado.flota = null;
   if (!sumar) estado.seleccion.clear();
   for (const id of ids) {
     if (sumar && estado.seleccion.has(id)) estado.seleccion.delete(id);
@@ -123,12 +186,19 @@ function elegirTropas(ids, sumar) {
 
 function soltarTodo() {
   if (!document.getElementById('ayuda').hidden) { document.getElementById('ayuda').hidden = true; return; }
+  if (!document.getElementById('menu-partida').hidden) { document.getElementById('menu-partida').hidden = true; return; }
   if (paqueteActual()) { cerrarPaquete(); return; }
   if (paisAbierto()) { cerrarPais(); return; }
   if (estado.alcanceFijo) { estado.alcance = null; estado.alcanceFijo = false; marcar(); return; }
   if (estado.modo === 'plan') { cerrarPlan(); fijarModo('normal'); return; }
   if (estado.modo !== 'normal') { fijarModo('normal'); return; }
-  if (estado.seleccion.size) { estado.seleccion.clear(); refrescarPaneles(); return; }
+  if (estado.seleccion.size || estado.escuadron != null || estado.flota != null) {
+    estado.seleccion.clear();
+    estado.escuadron = null;
+    estado.flota = null;
+    refrescarPaneles();
+    return;
+  }
   elegirProvincia(-1);
 }
 
@@ -148,6 +218,7 @@ function moverElegidas(destino) {
 
 // Orden con clic derecho: mover, o atacar con la plantilla rápida si hay enemigos.
 function ordenSobre(destino) {
+  if (destino >= 0 && estado.escuadron != null) { ordenAerea(destino); return; }
   if (destino < 0 || !estado.seleccion.size) return;
   if (enemigosEn(jugador, destino).length) {
     const plan = planInicial(jugador, destino, tropasElegidas());
@@ -162,6 +233,27 @@ function ordenSobre(destino) {
     return;
   }
   moverElegidas(destino);
+}
+
+// Clic derecho con un escuadrón elegido: en una provincia propia con base, se muda;
+// en una provincia enemiga, se arma un paquete de ataque con ese escuadrón.
+function ordenAerea(destino) {
+  const e = escuadronPorId(estado.escuadron);
+  if (!e) return;
+  if (datos.duenos[destino] === jugador) {
+    const base = basesDe(jugador).find((b) => b.provincia === destino);
+    if (!base) { mensaje(`${datos.provincias[destino].nombre} no tiene base aérea.`, 'malo', jugador); return; }
+    const err = cambiarBase(e, base.indice);
+    if (err) mensaje(err, 'malo', jugador);
+    else mensaje(`El ${e.nombre} se muda a ${base.nombre}.`, 'info', jugador);
+    refrescarPaneles();
+    return;
+  }
+  if (enGuerra(jugador, datos.duenos[destino])) {
+    abrirPaquete(jugador, destino, e.id);
+    return;
+  }
+  mensaje('Solo se ataca a países con los que estás en guerra.', 'malo', jugador);
 }
 
 function abrirPlanSobre(objetivo, preferidas = tropasElegidas()) {
@@ -196,7 +288,22 @@ const acciones = {
     refrescarPaneles();
   },
   declararGuerra: (pais) => {
-    declararGuerra(jugador, pais);
+    const e = declararConJustificacion(jugador, pais);
+    if (e) mensaje(e, 'malo', jugador);
+    refrescarPaneles();
+  },
+  pausar: () => {
+    if (!tiempo.pausado) { tiempo.pausado = true; tiempo.eventos.dispatchEvent(new Event('estado')); }
+  },
+  elegirFlota: (id) => { cerrarPais(); elegirFlota(id); },
+  soltarFlota: () => { estado.flota = null; refrescarPaneles(); },
+  alCargar: () => {
+    estado.seleccion.clear();
+    estado.escuadron = null;
+    estado.flota = null;
+    mapa.reconstruir();
+    document.getElementById('menu-partida').hidden = true;
+    actualizarReloj();
     refrescarPaneles();
   },
   planear: (prov) => abrirPlanSobre(prov),
@@ -223,7 +330,7 @@ const acciones = {
   },
   paqueteSobre: (prov) => {
     cerrarPlan();
-    abrirPaquete(jugador, prov);
+    abrirPaquete(jugador, prov, estado.escuadron);
     fijarModo('normal');
   },
   elegirBlancoAereo: () => {
@@ -254,6 +361,11 @@ const acciones = {
     acciones.centrarEn(b.provincia);
   },
   alCambiarPanel: marcar,
+  soloEsta: (id) => elegirTropas([id], false),
+  elegirEscuadron: (id) => elegirEscuadron(id),
+  soltarEscuadron: () => { estado.escuadron = null; refrescarPaneles(); },
+  modoBase: () => fijarModo('base'),
+  atacarConEscuadron: () => { fijarModo('blanco'); },
 };
 
 function fijarVista(vista) {
@@ -262,6 +374,11 @@ function fijarVista(vista) {
   marcar();
 }
 for (const b of document.querySelectorAll('.vistas button')) b.addEventListener('click', () => fijarVista(b.dataset.vista));
+document.getElementById('boton-partida').addEventListener('click', (e) => {
+  const m = document.getElementById('menu-partida');
+  if (m.hidden) { acciones.pausar(); mostrarMenuPartida(camara); } else m.hidden = true;
+  e.currentTarget.setAttribute('aria-expanded', String(!m.hidden));
+});
 document.getElementById('boton-ayuda').addEventListener('click', (e) => {
   const a = document.getElementById('ayuda');
   a.hidden = !a.hidden;
@@ -306,6 +423,16 @@ function posLocal(e) {
 function clic(p, boton, shift) {
   const m = camara.pantallaAMundo(p.x, p.y);
   const prov = provinciaEn(m.x, m.y);
+  if (boton === 2 && estado.flota != null) {
+    const f = flotaPorId(estado.flota);
+    const z = zonaEn(m.x, m.y);
+    if (f && z) {
+      const e = ordenarFlota(f, z.clave);
+      if (e) mensaje(e, 'malo', jugador);
+      refrescarPaneles();
+    }
+    return;
+  }
   if (boton === 2) { ordenSobre(prov); return; }
   if (estado.modo === 'mover') { if (prov >= 0) moverElegidas(prov); fijarModo('normal'); return; }
   if (estado.modo === 'objetivo') {
@@ -321,8 +448,22 @@ function clic(p, boton, shift) {
     return;
   }
   if (estado.modo === 'plan') { clicEnPlan(prov); return; }
+  if (estado.modo === 'base') {
+    fijarModo('normal');
+    if (prov >= 0) ordenAerea(prov);
+    return;
+  }
   const ficha = fichaEn(p.x, p.y);
-  if (ficha?.escuadrones) { abrirPais(ficha.pais, 'aviacion'); return; }
+  if (ficha?.flota != null) {
+    if (ficha.pais === jugador) elegirFlota(ficha.flota);
+    else abrirPais(ficha.pais, 'marina');
+    return;
+  }
+  if (ficha?.escuadron != null) {
+    if (ficha.pais === jugador) elegirEscuadron(ficha.escuadron);
+    else abrirPais(ficha.pais, 'aviacion');
+    return;
+  }
   if (ficha && ficha.pais === jugador) { elegirTropas(ficha.ids, shift); return; }
   if (estado.alcanceFijo) { estado.alcance = null; estado.alcanceFijo = false; }
   elegirProvincia(prov);
@@ -348,7 +489,7 @@ lienzo.addEventListener('pointerdown', (e) => {
   const p = posLocal(e);
   punteros.set(e.pointerId, p);
   if (punteros.size === 1) {
-    inicio = { ...p, boton: e.button, shift: e.shiftKey };
+    inicio = { ...p, boton: e.button, shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey, mouse: e.pointerType === 'mouse' };
     arrastrando = false;
   } else if (punteros.size === 2) {
     const [a, b] = [...punteros.values()];
@@ -383,9 +524,18 @@ lienzo.addEventListener('pointermove', (e) => {
   }
   if (!arrastrando && inicio && Math.hypot(p.x - inicio.x, p.y - inicio.y) > UMBRAL_ARRASTRE) {
     arrastrando = true;
-    lienzo.style.cursor = 'grabbing';
+    // Con el botón izquierdo del mouse se arma una caja para elegir tropas (como en HOI4);
+    // con el derecho o el del medio, o con el dedo, se mueve el mapa.
+    if (inicio.mouse && inicio.boton === 0 && (estado.modo === 'normal' || estado.modo === 'mover')) {
+      estado.caja = { x0: inicio.x, y0: inicio.y, x1: p.x, y1: p.y };
+      lienzo.style.cursor = 'crosshair';
+    } else lienzo.style.cursor = 'grabbing';
   }
-  if (arrastrando) {
+  if (arrastrando && estado.caja) {
+    estado.caja.x1 = p.x;
+    estado.caja.y1 = p.y;
+    marcar();
+  } else if (arrastrando) {
     camara.desplazarPantalla(p.x - anterior.x, p.y - anterior.y);
     marcar();
   }
@@ -396,12 +546,28 @@ function soltar(e) {
   punteros.delete(e.pointerId);
   if (punteros.size < 2) pellizco = null;
   if (punteros.size === 0) {
-    if (e.type === 'pointerup' && !arrastrando && inicio && (inicio.boton === 0 || inicio.boton === 2)) {
-      clic(posLocal(e), inicio.boton, inicio.shift);
+    if (estado.caja) {
+      cerrarCaja(inicio.shift || inicio.ctrl);
+    } else if (e.type === 'pointerup' && !arrastrando && inicio && (inicio.boton === 0 || inicio.boton === 2)) {
+      clic(posLocal(e), inicio.boton, inicio.shift || inicio.ctrl);
     }
     inicio = null;
     arrastrando = false;
   }
+}
+// Elige las brigadas propias cuyas fichas quedaron dentro de la caja.
+function cerrarCaja(sumar) {
+  const c = estado.caja;
+  estado.caja = null;
+  const x0 = Math.min(c.x0, c.x1), x1 = Math.max(c.x0, c.x1);
+  const y0 = Math.min(c.y0, c.y1), y1 = Math.max(c.y0, c.y1);
+  const ids = posicionesBrigadas().filter((q) => q.pais === jugador && q.x >= x0 - 10 && q.x <= x1 + 10 && q.y >= y0 - 8 && q.y <= y1 + 8).map((q) => q.id);
+  if (!ids.length && !sumar) { estado.seleccion.clear(); refrescarPaneles(); return; }
+  if (sumar) for (const id of ids) estado.seleccion.add(id);
+  else estado.seleccion = new Set(ids);
+  estado.escuadron = null;
+  estado.provincia = -1;
+  refrescarPaneles();
 }
 lienzo.addEventListener('pointerup', soltar);
 lienzo.addEventListener('pointercancel', soltar);
@@ -490,12 +656,18 @@ function alPasarHora() {
   actualizarHora(tiempo.horas);
   actualizarHoraSuministro();
   actualizarHoraAviacion();
+  actualizarReconversiones();
+  actualizarHoraMarina();
+  actualizarHoraDiplomacia();
   actualizarOperaciones();
   if (tiempo.horas % 24 === 0) {
     const dia = tiempo.horas / 24;
     actualizarDiaSuministro();
     actualizarDiaEconomia();
     actualizarDiaAviacion(dia);
+    actualizarDiaMarina();
+    actualizarDiaDiplomacia();
+    actualizarDiaIA(dia);
   }
   marcar();
   // Los paneles se refrescan cada 6 horas de juego (o cuando pasa algo).
@@ -522,17 +694,24 @@ async function arrancar(guardado = {}) {
   jugador = datos.escenario.pais_jugador;
   document.documentElement.style.setProperty('--pais-jugador', datos.paises[jugador]?.color ?? '#3d6d93');
   iniciarTiempo(datos.escenario);
+  iniciarDisenador();
   generarEjercitos();
   iniciarEconomia();
   iniciarAviacion();
+  iniciarMarina();
   iniciarSuministro();
+  iniciarDiplomacia();
   mapa.jugador = jugador;
   mapa.reconstruir();
   datos.eventos.addEventListener('dueno', () => { mapa.reconstruir(); recalcularTodo(); marcar(); });
   ejercito.eventos.addEventListener('incursion', (e) => mostrarResumenIncursion(e.detail));
-  for (const tipo of ['economia', 'aviacion', 'suministro']) {
+  for (const tipo of ['economia', 'aviacion', 'suministro', 'marina', 'diplomacia', 'diseno']) {
     ejercito.eventos.addEventListener(tipo, () => { actualizarBarra(); marcar(); });
   }
+  ejercito.eventos.addEventListener('evento', (e) => mostrarEvento(e.detail));
+  ejercito.eventos.addEventListener('mediacion', (e) => mostrarMediacion(e.detail));
+  ejercito.eventos.addEventListener('propuesta_paz', (e) => mostrarPropuestaPaz(e.detail));
+  ejercito.eventos.addEventListener('combate_naval', (e) => mostrarCombateNaval(e.detail));
   ejercito.eventos.addEventListener('cambio', () => {
     for (const id of [...estado.seleccion]) if (!brigadaPorId(id)) estado.seleccion.delete(id);
     refrescarPaneles();
@@ -541,6 +720,7 @@ async function arrancar(guardado = {}) {
   iniciarInterfaz(acciones);
   iniciarPanelPais(acciones);
   iniciarPanelAereo(acciones);
+  iniciarPanelMarina(acciones);
 
   ajustarTamano();
   new ResizeObserver(ajustarTamano).observe(lienzo);
@@ -564,7 +744,12 @@ async function arrancar(guardado = {}) {
   // Para pruebas desde la consola del navegador.
   window.juego = {
     datos, camara, mapa, tiempo, ejercito, operaciones, estado, acciones, elegirTropas, ordenSobre, abrirPlanSobre, lanzar,
-    abrirPais, escuadronPorId, modulos: { economia: await import('./economia.js'), aviacion: await import('./aviacion.js'), suministro: await import('./suministro.js') },
+    abrirPais, escuadronPorId,
+    modulos: {
+      economia: await import('./economia.js'), aviacion: await import('./aviacion.js'), suministro: await import('./suministro.js'),
+      marina: await import('./marina.js'), diplomacia: await import('./diplomacia.js'), disenador: await import('./disenador.js'),
+      partida: await import('./partida.js'), operaciones: await import('./operaciones.js'),
+    },
   };
 }
 

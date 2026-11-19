@@ -1,0 +1,21 @@
+{
+  "_comentario": "Situación diplomática al empezar 1978. relaciones: 'A|B' -> valor (las que no están valen 'por_defecto'). reclamos: territorios que un país reclama a otro (acortan la justificación de guerra). tension_inicial: tensión mundial.",
+  "fuente": "Elaboración propia a partir de la historia del período. A verificar.",
+  "tension_inicial": 30,
+  "por_defecto": 20,
+  "relaciones": {
+    "ARG|CHL": -60, "ARG|GBR": -35, "ARG|BRA": -10, "ARG|URY": 40, "ARG|PRY": 45, "ARG|BOL": 35, "ARG|PER": 50,
+    "CHL|PER": -40, "CHL|BOL": -55, "CHL|BRA": 25, "CHL|GBR": 30,
+    "PER|ECU": -50, "BOL|PRY": -10, "VEN|GUY": -40, "VEN|COL": -15, "GUY|SUR": -20,
+    "BRA|URY": 40, "BRA|PRY": 50, "BRA|BOL": 30
+  },
+  "reclamos": [
+    { "de": "ARG", "a": "GBR", "provincias": ["FK-MAL", "GS-GEO"], "nombre": "Islas Malvinas, Georgias y Sandwich del Sur" },
+    { "de": "ARG", "a": "CHL", "provincias": ["CL-MA"], "nombre": "Islas del canal de Beagle (Picton, Lennox y Nueva)" },
+    { "de": "CHL", "a": "ARG", "provincias": ["AR-V"], "nombre": "Zona austral del Beagle" },
+    { "de": "BOL", "a": "CHL", "provincias": ["CL-AN"], "nombre": "Salida al mar" },
+    { "de": "ECU", "a": "PER", "provincias": ["PE-LOR"], "nombre": "Territorios amazónicos" },
+    { "de": "VEN", "a": "GUY", "provincias": ["GY-CU", "GY-PT", "GY-UT", "GY-BA", "GY-PM"], "nombre": "Guayana Esequiba" }
+  ],
+  "voluntad": { "ARG": 65, "CHL": 70, "GBR": 60, "PER": 60, "BOL": 50 }
+}

@@ -1,0 +1,16 @@
+{
+  "_comentario": "Clases de barcos. Valores del juego (antiaéreo, antibuque, antisubmarino, artillería, detección) de 0 a 4, estimados por clase. resistencia: impactos para hundirlo. hangar: aviones a bordo. capacidad: brigadas que transporta. sigilo: chance de no ser detectado (submarinos).",
+  "fuente": "Elaboración propia, valores por clase. A verificar con Jane's y The Military Balance.",
+  "clases": {
+    "portaaviones": { "nombre": "Portaaviones", "antiaereo": 2, "antibuque": 1, "antisubmarino": 2, "artilleria": 0.3, "deteccion": 3, "nudos": 24, "resistencia": 3, "hangar": 14, "costo": 300 },
+    "crucero": { "nombre": "Crucero", "antiaereo": 1.5, "antibuque": 1, "antisubmarino": 0, "artilleria": 4, "deteccion": 1.5, "nudos": 30, "resistencia": 3, "costo": 150 },
+    "destructor_misilistico": { "nombre": "Destructor misilístico", "antiaereo": 3, "antibuque": 2, "antisubmarino": 1.5, "artilleria": 1, "deteccion": 2.5, "nudos": 29, "resistencia": 1.5, "costo": 120 },
+    "destructor": { "nombre": "Destructor", "antiaereo": 1.3, "antibuque": 1.2, "antisubmarino": 2, "artilleria": 1.5, "deteccion": 1.8, "nudos": 32, "resistencia": 1.5, "costo": 70 },
+    "fragata": { "nombre": "Fragata", "antiaereo": 1.4, "antibuque": 1.5, "antisubmarino": 2.2, "artilleria": 1, "deteccion": 1.8, "nudos": 28, "resistencia": 1.2, "costo": 90 },
+    "corbeta": { "nombre": "Corbeta", "antiaereo": 0.8, "antibuque": 1.3, "antisubmarino": 1.2, "artilleria": 0.7, "deteccion": 1, "nudos": 24, "resistencia": 1, "costo": 40 },
+    "submarino": { "nombre": "Submarino", "antiaereo": 0, "antibuque": 3, "antisubmarino": 0.5, "artilleria": 0, "deteccion": 1, "nudos": 15, "resistencia": 1, "sigilo": 0.75, "costo": 60 },
+    "submarino_viejo": { "nombre": "Submarino antiguo", "antiaereo": 0, "antibuque": 2, "antisubmarino": 0.3, "artilleria": 0, "deteccion": 0.8, "nudos": 12, "resistencia": 1, "sigilo": 0.55, "costo": 20 },
+    "transporte": { "nombre": "Transporte", "antiaereo": 0.2, "antibuque": 0, "antisubmarino": 0, "artilleria": 0, "deteccion": 0.5, "nudos": 15, "resistencia": 1, "capacidad": 1, "costo": 25 },
+    "patrullero": { "nombre": "Patrullero", "antiaereo": 0.3, "antibuque": 0.3, "antisubmarino": 0.3, "artilleria": 0.3, "deteccion": 0.8, "nudos": 15, "resistencia": 0.6, "costo": 15 }
+  }
+}

@@ -20,11 +20,11 @@ Orden de construcción del guion. Cada paso termina con algo que se puede probar
 | 5 | Suministro | Hecho (depósitos, zonas verde/amarilla/roja, rutas que se cortan, desgaste) |
 | 6 | Aviación | Hecho (escuadrones de 1978, alerta, combate aéreo, aviación en Operaciones, paquetes de ataque, pilotos, disponibilidad) |
 | 7 | Economía, sectores y contratos | Hecho (4 sectores, contratos estatales y extranjeros, embargos, impuestos y gasto militar, repuestos) |
-| 8 | Diseñador de equipamiento | — |
-| 9 | Marina básica | — |
-| 10 | Política, diplomacia y árbol de Argentina | — |
-| 11 | IA | — |
-| 12 | Interfaz, sonido, guardar y cargar | — |
+| 8 | Diseñador de equipamiento | Hecho (variantes de aviones y tanques reales, puntos de diseño, reconversión) |
+| 9 | Marina básica | Hecho (zonas, flotas de 1978, misiones, combate en 3 pasos, bloqueo, desembarcos) |
+| 10 | Política, diplomacia y árbol de Argentina | Hecho (relaciones, justificación, tensión, voluntad, paz, mediación, árbol 1978, eventos) |
+| 11 | IA | Hecho (nivel Medio) |
+| 12 | Interfaz, sonido, guardar y cargar | Hecho salvo sonido (3 ranuras en el navegador y código de partida) |
 
 Hasta el paso 2 incluido se usó Godot; desde ahí el juego es web, así se puede
 probar en el navegador antes de cada entrega.
@@ -51,7 +51,11 @@ y abrir <http://localhost:8000>.
 | Pausa | Espacio | Botón Seguir / Pausa |
 | Velocidad | 1 a 5, o + y − | Barras de velocidad |
 | Noche on/off | N | — |
-| Elegir tropas | Clic en su ficha (Mayús suma) | Tocar la ficha |
+| Elegir tropas | Clic en su ficha, o arrastrar una caja con el botón izquierdo (Mayús suma) | Tocar la ficha |
+| Una sola brigada | De cerca cada brigada tiene su ficha; en el panel, clic en su fila | Igual |
+| Escuadrón | Clic en su ficha (avión) en la base; clic derecho en otra base propia lo muda | Botones del panel |
+| Flota | Clic en su ficha en el mar; clic derecho en otra zona la mueve | Botones del panel |
+| Mover el mapa | Arrastrar con el botón derecho o del medio, o WASD | Arrastrar |
 | Mover tropas | Clic derecho en el destino | Botón Mover y tocar el destino |
 | Atacar ya (plantilla rápida) | Clic derecho en una provincia enemiga con tropas | Botón Atacar… |
 | Planear una operación | Botón Atacar… o ficha de la provincia enemiga | Igual |
@@ -78,8 +82,9 @@ y abrir <http://localhost:8000>.
   y se ajustan probando.
 - **Guerra:** para probar, la ficha de una provincia extranjera tiene el botón
   "Declarar la guerra". La justificación llega con la diplomacia (paso 10).
-- **Pendiente para pasos siguientes:** marina (paso 9), clima, IA que ataque
-  (paso 11). El enemigo hoy solo defiende, intercepta con sus cazas y trae reservas.
+- **Defensa territorial:** una provincia propia sin brigadas tiene una guarnición
+  chica (más grande cuanto más grande la provincia, el doble en ciudades).
+- **Pendiente:** clima, sonido, subdividir las provincias más grandes.
 
 ## Suministro, aviación y economía
 
@@ -109,6 +114,30 @@ Para regenerar los datos históricos:
 pip install rdata
 python3 tools/construir_poder_militar.py
 ```
+
+## Marina, diplomacia, IA y partidas
+
+- **Marina** (`data/barcos.json`, `data/mapa/zonas_maritimas.json`,
+  `data/reglas/marina.json`): 16 zonas marítimas, flotas de 1978 aproximadas,
+  misiones patrullar, bloquear, escoltar y en puerto. Combate en 3 pasos:
+  detección, ataque aéreo y misiles, artillería; los submarinos atacan escondidos.
+  Controlar una zona con transportes deja cruzar tropas por mar y desembarcar.
+  El bloqueo corta suministro y divisas.
+- **Diplomacia** (`data/diplomacia/1978.json`, `data/reglas/diplomacia.json`):
+  relaciones, reclamos territoriales, justificación de guerra (25 días con
+  reclamo, 60 sin él), tensión mundial, voluntad nacional, alto el fuego o paz
+  con cesión, mediación cuando la tensión es alta.
+- **Árbol de Argentina 1978** (`data/arboles/ARG_1978.json`) con ramas Exterior y
+  Fuerzas Armadas, y eventos con fecha (`data/eventos/1978.json`): el laudo del
+  Beagle, el embargo de EE.UU., la noche del 21 de diciembre.
+- **Diseñador** (`data/reglas/disenador.json`, `data/tanques.json`): variantes de
+  aviones (motor, armas, radar, tanques extra, blindaje, contramedidas) y tanques
+  (cañón, motor, blindaje).
+- **IA nivel Medio** (`src/ia.js`): defiende las fronteras amenazadas, ataca donde
+  tiene ventaja y le llega el suministro, arma depósitos, usa aviación y flotas,
+  recluta y negocia la paz según su voluntad nacional.
+- **Partidas:** botón Partida: 3 ranuras en el navegador o un código de texto para
+  pasar la partida a otra compu.
 
 ## Datos del mapa
 

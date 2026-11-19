@@ -1,0 +1,25 @@
+{
+  "_comentario": "Política y diplomacia (paso 10, primera versión). Relaciones de -100 a 100, tensión mundial de 0 a 100, voluntad nacional de 0 a 100.",
+  "fuente": "Reglas del juego (elaboración propia)",
+  "dias_justificacion": 60,
+  "dias_justificacion_con_reclamo": 25,
+  "tension_por_justificacion": 4,
+  "tension_por_guerra": 12,
+  "tension_baja_por_dia": 0.03,
+  "relacion_terceros_por_guerra": -15,
+  "relacion_terceros_por_guerra_con_reclamo": -6,
+  "voluntad": {
+    "inicial": 70,
+    "por_cada_1000_bajas": -1.5,
+    "por_provincia_perdida": -4,
+    "por_provincia_ganada": 2,
+    "por_dia_de_guerra": -0.05,
+    "defensa_propia": 0.03,
+    "quiebre": 25
+  },
+  "paz": {
+    "alto_el_fuego_voluntad": 50,
+    "cesion_voluntad": 30
+  },
+  "mediacion": { "tension_minima": 55, "probabilidad_por_dia": 0.01 }
+}

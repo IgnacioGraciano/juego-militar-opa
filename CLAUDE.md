@@ -31,3 +31,6 @@
   `economia.js`; interfaz en `interfaz.js` (ficha, tropas, plan), `panel_pais.js` (barra y panel
   de país con pestañas), `panel_aereo.js` (paquetes de ataque), `dom.js` (ayudas), `simbolos.js`
   (pictogramas de unidades, mismo dibujo en Canvas y SVG).
+- Pasos 8 a 12: `disenador.js`, `marina.js`, `diplomacia.js` (relaciones, árbol nacional,
+  eventos, paz), `ia.js`, `partida.js` (guardar y cargar). Paneles: `panel_marina.js` (flota y
+  diálogos). Estado nuevo que haya que guardar tiene que sumarse en `partida.js`.

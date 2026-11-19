@@ -1,0 +1,33 @@
+{
+  "_comentario": "Diseñador de equipamiento (paso 8, primera versión): se editan equipos reales existentes. Cada cambio cuesta puntos de diseño; los puntos salen del sector industrial (aeronáutica para aviones, metalmecánica para tanques) y de decisiones del árbol nacional.",
+  "fuente": "Reglas del juego (elaboración propia)",
+  "puntos_base": 3,
+  "puntos_por_nivel": 0.5,
+  "dias_prototipo": 120,
+  "dias_reconversion": 60,
+  "reconversion_parte_del_costo": 0.3,
+  "avion": {
+    "motor": {
+      "original": { "nombre": "Original", "puntos": 0 },
+      "potente": { "nombre": "Más potente", "texto": "+15 % velocidad, −10 % alcance", "puntos": 2, "velocidad": 1.15, "radio": 0.9, "costo": 1.2 },
+      "economico": { "nombre": "Económico", "texto": "+20 % alcance, −3 % velocidad", "puntos": 1, "velocidad": 0.97, "radio": 1.2, "costo": 1.05 }
+    },
+    "agregados": {
+      "canones": { "nombre": "Cañones", "puntos": 1, "costo": 1.03 },
+      "misiles_cortos": { "nombre": "Misiles de corto alcance", "puntos": 2, "costo": 1.1 },
+      "misiles_largos": { "nombre": "Misiles de alcance medio", "texto": "Necesita radar", "puntos": 3, "costo": 1.15 },
+      "radar": { "nombre": "Radar de tiro", "texto": "Vuela con mal tiempo y de noche", "puntos": 2, "costo": 1.15 },
+      "tanques_extra": { "nombre": "Tanques de combustible extra", "texto": "+25 % alcance, menos maniobra", "puntos": 1, "radio": 1.25, "maniobra": -0.08, "costo": 1.02 },
+      "blindaje": { "nombre": "Blindaje", "texto": "Los antiaéreos derriban 40 % menos, −5 % velocidad", "puntos": 1, "velocidad": 0.95, "blindaje": 0.6, "costo": 1.05 },
+      "contramedidas": { "nombre": "Contramedidas electrónicas", "texto": "30 % menos chances de ser detectado", "puntos": 2, "contramedidas": 0.7, "costo": 1.1 }
+    }
+  },
+  "tanque": {
+    "agregados": {
+      "canon": { "nombre": "Cañón de mayor calibre", "texto": "+20 % ataque", "puntos": 2, "ataque": 1.2, "costo": 1.15 },
+      "motor": { "nombre": "Motor nuevo", "texto": "+15 % velocidad", "puntos": 1, "velocidad": 1.15, "costo": 1.08 },
+      "blindaje": { "nombre": "Blindaje adicional", "texto": "+20 % defensa, −10 % velocidad", "puntos": 2, "defensa": 1.2, "velocidad": 0.9, "costo": 1.12 },
+      "estabilizador": { "nombre": "Estabilizador y telémetro", "texto": "+10 % ataque y defensa", "puntos": 2, "ataque": 1.1, "defensa": 1.1, "costo": 1.1 }
+    }
+  }
+}

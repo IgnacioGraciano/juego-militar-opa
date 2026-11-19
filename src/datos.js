@@ -22,7 +22,13 @@ export const datos = {
   lagos: [],
   regiones: [],
   escenario: {},
-  reglas: { ejercito: {}, combate: {}, aviacion: {}, suministro: {}, economia: {} },
+  reglas: { ejercito: {}, combate: {}, aviacion: {}, suministro: {}, economia: {}, disenador: {}, marina: {}, diplomacia: {} },
+  barcos: { clases: {} },
+  zonas: {}, // zonas marítimas
+  tanques: { modelos: {} },
+  diplomacia: {},
+  arbol: null, // árbol nacional del jugador
+  eventosEscenario: [], // eventos con fecha (data/eventos)
   aviones: { modelos: {}, proveedores: {} },
   trenes: [],
   historico: {}, // poder militar por país y año (Correlates of War)
@@ -73,7 +79,8 @@ function hexARgb(hex) {
 export async function cargarDatos(escenario = '1978') {
   const t0 = performance.now();
   const [paises, geom, prov, ciud, puer, rios, lagos, reg, bases, esc, rEjercito, rCombate, hist,
-    rAviacion, rSuministro, rEconomia, aviones, trenes] = await Promise.all([
+    rAviacion, rSuministro, rEconomia, aviones, trenes, rDisenador, rMarina, rDiplomacia, barcos, zonas, tanques,
+    diplomacia, eventosEscenario] = await Promise.all([
     leerJson('data/paises.json'),
     leerJson('data/mapa/geometria.json'),
     leerJson('data/mapa/provincias.json'),
@@ -92,8 +99,28 @@ export async function cargarDatos(escenario = '1978') {
     leerJson('data/reglas/economia.json'),
     leerJson('data/aviones.json'),
     leerJson('data/mapa/trenes.json'),
+    leerJson('data/reglas/disenador.json'),
+    leerJson('data/reglas/marina.json'),
+    leerJson('data/reglas/diplomacia.json'),
+    leerJson('data/barcos.json'),
+    leerJson('data/mapa/zonas_maritimas.json'),
+    leerJson('data/tanques.json'),
+    leerJson(`data/diplomacia/${escenario}.json`),
+    leerJson(`data/eventos/${escenario}.json`),
   ]);
-  datos.reglas = { ejercito: rEjercito, combate: rCombate, aviacion: rAviacion, suministro: rSuministro, economia: rEconomia };
+  datos.barcos = barcos;
+  datos.tanques = tanques;
+  datos.diplomacia = diplomacia;
+  datos.eventosEscenario = eventosEscenario.eventos ?? [];
+  datos.zonas = Object.fromEntries(Object.entries(zonas.zonas).map(([k, z]) => {
+    const c = desdeLonLat(z.centro[0], z.centro[1]);
+    return [k, { ...z, clave: k, x: c.x, y: c.y }];
+  }));
+  datos.radioZonaKm = zonas.radio_km;
+  datos.reglas = {
+    ejercito: rEjercito, combate: rCombate, aviacion: rAviacion, suministro: rSuministro, economia: rEconomia,
+    disenador: rDisenador, marina: rMarina, diplomacia: rDiplomacia,
+  };
   datos.aviones = aviones;
   datos.trenes = trenes.trenes.map((t) => aLinea(t));
   datos.historico = hist;
@@ -168,6 +195,16 @@ export async function cargarDatos(escenario = '1978') {
 
   // Escenario: dueños iniciales
   datos.escenario = esc;
+  // Árbol nacional del país del jugador (si existe para el escenario)
+  try {
+    datos.arbol = await leerJson(`data/arboles/${esc.pais_jugador}_${escenario}.json`);
+  } catch {
+    datos.arbol = null;
+  }
+  // Provincias costeras de cada zona marítima
+  for (const z of Object.values(datos.zonas)) {
+    z.costeras = datos.provincias.filter((p) => p.costera && distanciaKm(p.centroPos.x, p.centroPos.y, z.x, z.y) <= datos.radioZonaKm).map((p) => p.indice);
+  }
   datos.duenos = datos.provincias.map((p) => p.pais);
   for (const [id, pais] of Object.entries(esc.duenos || {})) {
     if (datos.indiceProvincia.has(id)) datos.duenos[datos.indiceProvincia.get(id)] = pais;

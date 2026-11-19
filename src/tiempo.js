@@ -77,6 +77,12 @@ export function textoFecha() {
   return `${f.getUTCDate()} de ${MESES[f.getUTCMonth()]} de ${f.getUTCFullYear()}`;
 }
 
+const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+export function textoFechaCorta() {
+  const f = fechaLocal();
+  return `${f.getUTCDate()} ${MESES_CORTOS[f.getUTCMonth()]} ${f.getUTCFullYear()}`;
+}
+
 export function textoHora() {
   return `${String(fechaLocal().getUTCHours()).padStart(2, '0')}:00`;
 }

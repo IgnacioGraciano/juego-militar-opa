@@ -423,5 +423,175 @@
         "base": "Base Aérea El Libertador"
       }
     ]
+  },
+  "_tanques_comentario": "Tanque en producción en cada país (data/tanques.json). Las brigadas blindadas y mecanizadas usan ese tanque.",
+  "tanques": {
+    "ARG": "amx13",
+    "CHL": "m41",
+    "BRA": "m41",
+    "PER": "t55",
+    "URY": "m4",
+    "PRY": "m4",
+    "BOL": "m4",
+    "ECU": "amx13",
+    "COL": "m4",
+    "VEN": "amx30",
+    "GUY": "m4",
+    "SUR": "m4",
+    "GBR": "m4",
+    "FRA": "amx13"
+  },
+  "_flotas_comentario": "Flotas de 1978: zona (data/mapa/zonas_maritimas.json) y barcos por clase (data/barcos.json). Cantidades aproximadas, a verificar con The Military Balance.",
+  "flotas": {
+    "ARG": [
+      {
+        "nombre": "Flota de Mar",
+        "zona": "plata",
+        "mision": "patrullar",
+        "barcos": {
+          "portaaviones": 1,
+          "crucero": 1,
+          "destructor_misilistico": 1,
+          "destructor": 6,
+          "corbeta": 2,
+          "transporte": 3
+        }
+      },
+      {
+        "nombre": "Fuerza de Submarinos",
+        "zona": "plata",
+        "mision": "patrullar",
+        "barcos": {
+          "submarino": 2,
+          "submarino_viejo": 2
+        }
+      }
+    ],
+    "CHL": [
+      {
+        "nombre": "Escuadra Nacional",
+        "zona": "pac_central",
+        "mision": "patrullar",
+        "barcos": {
+          "crucero": 2,
+          "destructor": 4,
+          "fragata": 2,
+          "transporte": 2
+        }
+      },
+      {
+        "nombre": "Fuerza de Submarinos",
+        "zona": "pac_central",
+        "mision": "patrullar",
+        "barcos": {
+          "submarino": 2,
+          "submarino_viejo": 1
+        }
+      },
+      {
+        "nombre": "Patrulla del Beagle",
+        "zona": "drake",
+        "mision": "patrullar",
+        "barcos": {
+          "patrullero": 2
+        }
+      }
+    ],
+    "PER": [
+      {
+        "nombre": "Fuerza de Superficie",
+        "zona": "mar_de_grau",
+        "mision": "patrullar",
+        "barcos": {
+          "crucero": 2,
+          "destructor": 6,
+          "transporte": 2
+        }
+      },
+      {
+        "nombre": "Fuerza de Submarinos",
+        "zona": "mar_de_grau",
+        "mision": "patrullar",
+        "barcos": {
+          "submarino": 4,
+          "submarino_viejo": 4
+        }
+      }
+    ],
+    "BRA": [
+      {
+        "nombre": "Esquadra",
+        "zona": "atl_sur_brasil",
+        "mision": "patrullar",
+        "barcos": {
+          "portaaviones": 1,
+          "destructor": 10,
+          "fragata": 4,
+          "transporte": 3
+        }
+      },
+      {
+        "nombre": "Força de Submarinos",
+        "zona": "atl_sur_brasil",
+        "mision": "patrullar",
+        "barcos": {
+          "submarino": 3,
+          "submarino_viejo": 5
+        }
+      }
+    ],
+    "VEN": [
+      {
+        "nombre": "Escuadra",
+        "zona": "caribe",
+        "mision": "patrullar",
+        "barcos": {
+          "destructor": 4,
+          "submarino": 2
+        }
+      }
+    ],
+    "COL": [
+      {
+        "nombre": "Flota del Caribe",
+        "zona": "caribe",
+        "mision": "patrullar",
+        "barcos": {
+          "destructor": 3,
+          "submarino": 2
+        }
+      }
+    ],
+    "ECU": [
+      {
+        "nombre": "Escuadra",
+        "zona": "pac_ecuatorial",
+        "mision": "patrullar",
+        "barcos": {
+          "destructor": 1,
+          "submarino": 2
+        }
+      }
+    ],
+    "URY": [
+      {
+        "nombre": "Flota",
+        "zona": "plata",
+        "mision": "patrullar",
+        "barcos": {
+          "corbeta": 2
+        }
+      }
+    ],
+    "GBR": [
+      {
+        "nombre": "HMS Endurance",
+        "zona": "malvinas",
+        "mision": "patrullar",
+        "barcos": {
+          "patrullero": 1
+        }
+      }
+    ]
   }
 }

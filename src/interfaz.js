@@ -5,7 +5,7 @@
 import { datos, nombrePais } from './datos.js';
 import {
   tiempo, SEGUNDOS_POR_DIA, alternarPausa, acelerar, frenar, fijarVelocidad,
-  textoFecha, textoHora, textoZona,
+  textoFecha, textoFechaCorta, textoHora, textoZona,
 } from './tiempo.js';
 import {
   ejercito, tipos, enGuerra, enemigosDe, brigadaPorId, cuerpoPorId, costoBrigada, puedeReclutar,
@@ -31,7 +31,7 @@ export function iniciarInterfaz(acciones) {
   const barras = $('barras');
   SEGUNDOS_POR_DIA.forEach((seg, i) => {
     barras.append(h('button', {
-      class: 'barra', type: 'button', style: `--alto:${8 + i * 3}px`,
+      class: 'pip', type: 'button', style: `--alto:${6 + i * 3}px`,
       title: `Velocidad ${i + 1}: un día cada ${String(seg).replace('.', ',')} s`, 'aria-label': `Velocidad ${i + 1}`,
       onclick: () => fijarVelocidad(i + 1),
     }));
@@ -43,17 +43,22 @@ export function iniciarInterfaz(acciones) {
   tiempo.eventos.addEventListener('hora', actualizarReloj);
   tiempo.eventos.addEventListener('estado', actualizarReloj);
   ejercito.eventos.addEventListener('mensaje', (e) => agregarMensaje(e.detail));
-  ejercito.eventos.addEventListener('decision', (e) => mostrarDecision(e.detail));
+  ejercito.eventos.addEventListener('decision', (e) => { if (e.detail.pais === datos.escenario.pais_jugador) mostrarDecision(e.detail); });
   actualizarReloj();
   actualizarResumen();
 }
 
+const ICONO_SEGUIR = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.5v9l7.5-4.5z"/></svg>';
+const ICONO_PAUSA = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 1.5h2.6v9H2.5zM6.9 1.5h2.6v9H6.9z"/></svg>';
+
 export function actualizarReloj() {
-  $('fecha').textContent = textoFecha();
+  $('fecha').textContent = textoFechaCorta();
+  $('fecha').title = textoFecha();
   $('hora').textContent = `${textoHora()} · ${textoZona()}`;
   const p = $('pausa');
-  p.textContent = tiempo.pausado ? 'Seguir' : 'Pausa';
-  p.setAttribute('aria-pressed', String(tiempo.pausado));
+  p.innerHTML = tiempo.pausado ? ICONO_SEGUIR : ICONO_PAUSA;
+  p.setAttribute('aria-label', tiempo.pausado ? 'Seguir' : 'Pausa');
+  p.title = `${tiempo.pausado ? 'Seguir' : 'Pausa'} (Espacio)`;
   $('reloj').classList.toggle('en-pausa', tiempo.pausado);
   [...$('barras').children].forEach((b, i) => b.classList.toggle('activa', i < tiempo.velocidad));
   $('velocidad').textContent = `Vel. ${tiempo.velocidad}`;
@@ -150,9 +155,8 @@ export function mostrarProvincia(i) {
       }, h('span', { class: 'reclutar-tipo' }, iconoUnidad(clave, jugador), h('b', {}, t.nombre)), h('small', {}, `${miles(c.efectivos)} h · ${c.equipo} equipo · ${c.dias} d`));
     })));
   } else if (!propia && !enGuerra(jugador, dueno)) {
-    acciones.push(h('button', { type: 'button', class: 'boton peligro', onclick: () => acc.declararGuerra(dueno) },
-      `Declarar la guerra a ${nombrePais(dueno)}`));
-    acciones.push(h('p', { class: 'nota' }, 'Para probar el combate. La justificación de guerra llega con la diplomacia (paso 10).'));
+    acciones.push(h('button', { type: 'button', class: 'boton', onclick: () => acc.abrirPais(dueno, 'resumen') },
+      h('b', {}, `Guerra y paz con ${nombrePais(dueno)}…`), h('small', {}, 'Justificación, declaración de guerra, relaciones')));
   } else if (enGuerra(jugador, dueno)) {
     const ejes = ejesPosibles(jugador, i);
     acciones.push(h('button', {
@@ -189,14 +193,18 @@ export function mostrarTropas(ids) {
   if (!lista.length) { panel.hidden = true; return; }
   const cuerpos = [...new Set(lista.map((b) => b.cuerpo))].map(cuerpoPorId).filter(Boolean);
   $('tropas-titulo').textContent = lista.length === 1 ? lista[0].nombre : `${lista.length} brigadas`;
-  $('tropas-lista').replaceChildren(...lista.map((b) => h('li', {},
+  $('tropas-lista').replaceChildren(...lista.map((b) => h('li', {
+    class: lista.length > 1 ? 'clicable' : '',
+    title: lista.length > 1 ? 'Clic: quedarse solo con esta brigada' : null,
+    onclick: lista.length > 1 ? () => acc.soloEsta(b.id) : null,
+  },
     iconoUnidad(b.tipo, b.pais, tipos()[b.tipo].nombre),
     h('div', { class: 'tropa' },
       h('div', { class: 'tropa-nombre' }, b.nombre),
       h('div', { class: 'tropa-datos' }, `${miles(b.efectivos)} h · entrenamiento ${Math.round(b.entrenamiento * 100)} % · ${datos.provincias[b.provincia].nombre}`),
       h('div', { class: 'tropa-datos' }, `${estadoBrigada(b)} · suministro ${NOMBRE_ZONA[zona(suministroEn(b.pais, b.provincia))].toLowerCase()}`),
       h('div', { class: 'barra-org', title: `Organización ${Math.round(b.organizacion * 100)} %` }, h('i', { style: `width:${Math.round(b.organizacion * 100)}%` }))),
-    lista.length > 1 ? h('button', { type: 'button', class: 'quitar', title: 'Sacar de la selección', 'aria-label': 'Sacar de la selección', onclick: () => acc.quitarDeSeleccion(b.id) }, '×') : null,
+    lista.length > 1 ? h('button', { type: 'button', class: 'quitar', title: 'Sacar de la selección', 'aria-label': 'Sacar de la selección', onclick: (ev) => { ev.stopPropagation(); acc.quitarDeSeleccion(b.id); } }, '×') : null,
   )));
   $('tropas-cuerpos').replaceChildren(...cuerpos.map((c) => h('div', { class: 'cuerpo' },
     h('span', {}, `${c.nombre}: ${c.general.nombre} `, h('span', { class: 'estrellas', title: `Experiencia ${c.general.experiencia} de 5` }, '★'.repeat(c.general.experiencia) + '☆'.repeat(5 - c.general.experiencia))),

@@ -12,6 +12,7 @@ import { datos, nombrePais } from './datos.js';
 import { ejercito, enGuerra, enemigosDe, mensaje, avisar, datoHistorico, anioEscenario } from './ejercito.js';
 import { fechaLocal } from './tiempo.js';
 import { aviacion, modelo, recibirAviones } from './aviacion.js';
+import { zonasBloqueadas } from './marina.js';
 
 export const economia = { paises: {}, contratos: [], siguienteId: 1 };
 const RE = () => datos.reglas.economia;
@@ -270,7 +271,9 @@ export function actualizarDiaEconomia() {
     const enGuerraAhora = enemigosDe(e.pais).length > 0;
     e.fondosMilitares += (e.pbi * e.gastoMilitar) / 365;
     e.tesoro += (e.pbi * (e.impuestos - e.gastoMilitar - 0.15)) / 365;
-    e.divisas += (e.pbi * pp.divisas_netas_por_pbi) / 365;
+    // El bloqueo naval corta el comercio por mar.
+    const bloqueo = Math.min(0.9, zonasBloqueadas(e.pais).length * datos.reglas.marina.bloqueo_divisas_por_zona);
+    e.divisas += (e.pbi * pp.divisas_netas_por_pbi * (1 - bloqueo)) / 365 - (bloqueo ? (e.pbi * 0.01 * bloqueo) / 365 : 0);
     e.crecimiento = pp.crecimiento_base
       + (e.gastoMilitar - 0.03) * 100 * pp.crecimiento_por_punto_gasto
       + (enGuerraAhora ? pp.crecimiento_en_guerra : 0)

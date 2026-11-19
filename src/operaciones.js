@@ -6,11 +6,14 @@
 //   Cada hora: Ventaja = raíz(P_ataque / P_defensa) x Azar(0,8 a 1,2).
 
 import { datos, nombrePais } from './datos.js';
-import { aLonLat } from './geo.js';
+import { aLonLat, distanciaKm } from './geo.js';
 import { posicionSolEn, msUtc, tiempo } from './tiempo.js';
 import { suministroEn, zona } from './suministro.js';
 import { aireEnFase, estimarAire, bombardeoAereo, escuadronPorId, escuadronesDe, disponibles as avionesListos, enAlcance } from './aviacion.js';
 import { sumarBajas } from './economia.js';
+import { enlacesMaritimos } from './marina.js';
+import { sumarBajasVoluntad } from './diplomacia.js';
+import { decidirIA } from './ia.js';
 import {
   ejercito, tipos, enGuerra, enemigosEn, brigadaPorId, cuerpoPorId, generalDe, calcularRuta,
   ocupar, retirar, eliminarBrigada, ganarExperiencia, mensaje, avisar,
@@ -32,9 +35,16 @@ export const anchoFrente = (prov) => C().terreno[datos.provincias[prov].terreno]
 // ------------------------------------------------------------------ planificación
 
 // Provincias propias desde donde se puede atacar el objetivo.
+// Provincias propias desde donde se puede atacar: las vecinas por tierra y, si se controla
+// la zona marítima y hay transportes, las costeras de la misma zona (desembarco).
 export function ejesPosibles(pais, objetivo) {
-  return datos.provincias[objetivo].conexiones.filter((c) => datos.duenos[c.j] === pais).map((c) => c.j);
+  const porTierra = datos.provincias[objetivo].conexiones.filter((c) => datos.duenos[c.j] === pais).map((c) => c.j);
+  const porMar = datos.provincias.filter((p, i) => datos.duenos[i] === pais && !porTierra.includes(i)
+    && enlacesMaritimos(pais, i).some((e) => e.j === objetivo)).map((p) => p.indice);
+  return [...porTierra, ...porMar];
 }
+
+export const esDesembarco = (op, objetivo) => op.eje >= 0 && !datos.provincias[objetivo].conexiones.some((c) => c.j === op.eje);
 
 export function brigadasDisponibles(pais) {
   return ejercito.brigadas.filter((b) => b.pais === pais && !b.formacion && !b.operacion);
@@ -168,6 +178,7 @@ export function multiplicadoresAtaque(op, atacantes, objetivo, ctx = {}) {
     ['Noche', ctx.noche ? c.noche_ataque : 1],
     ['Suministro', ctx.suministro ?? suministroEn(op.pais, objetivo)],
     ['Apoyo aéreo', ctx.aire ?? op.aire?.multiplicador ?? 1],
+    ['Desembarco', esDesembarco(op, objetivo) ? datos.reglas.marina.desembarco : 1],
   ];
   return lista;
 }
@@ -362,7 +373,13 @@ function pedirDecision(op, resumen) {
   op.estado = 'decision';
   op.decision = resumen;
   for (const c of new Set(fuerzasDe(op).map((b) => b.cuerpo))) ganarExperiencia(c);
-  if (op.pais === datos.escenario.pais_jugador && !tiempo.pausado) {
+  if (op.pais !== datos.escenario.pais_jugador) {
+    // La IA decide sola, sin frenar el juego.
+    decidirIA(op);
+    avisar('cambio');
+    return;
+  }
+  if (!tiempo.pausado) {
     tiempo.pausado = true;
     tiempo.eventos.dispatchEvent(new Event('estado'));
   }
@@ -395,6 +412,32 @@ function iniciarFase(op, fase) {
     propias: new Map(fuerzasDe(op).map((b) => [b.id, b.efectivos])),
     enemigas: new Map(enemigosEn(op.pais, objetivoActual(op)).map((b) => [b.id, b.efectivos])),
   };
+  // Guarnición territorial: defiende una provincia propia sin brigadas.
+  const obj = objetivoActual(op);
+  op.horasCombate = 0;
+  if (op.guarnicion?.provincia !== obj) op.guarnicion = null;
+  if (!op.guarnicion && !enemigosEn(op.pais, obj).length && datos.provincias[obj].pais === datos.duenos[obj] && datos.duenos[obj] !== op.pais && fase !== 'preparacion') {
+    const g = C().guarnicion;
+    const pr = datos.provincias[obj];
+    const capital = datos.ciudades.some((x) => x.capital === 'pais' && x.provincia === pr.id);
+    const hombres = Math.min(g.efectivos_maximos, g.efectivos + (g.efectivos_por_100000_km2 * pr.area_km2) / 100000)
+      * (pr.terreno === 'ciudad' || capital ? g.multiplicador_ciudad : 1);
+    op.guarnicion = {
+      id: -1, pais: datos.duenos[obj], tipo: g.tipo, nombre: 'Guarnición territorial', provincia: obj,
+      efectivos: hombres, efectivosMax: hombres, entrenamiento: g.entrenamiento, equipo: g.equipo,
+      moral: g.moral, organizacion: g.organizacion, atrincheramiento: 0.1,
+    };
+  }
+  // Explotación: primero hay que llegar a la provincia siguiente.
+  op.horasLlegada = 0;
+  if (fase === 'explotacion' && op.ejeExplotacion != null) {
+    const a = datos.provincias[op.ejeExplotacion].centroPos;
+    const b = datos.provincias[obj].centroPos;
+    const km = distanciaKm(a.x, a.y, b.x, b.y);
+    const moviles = fuerzasDe(op).filter((x) => tipos()[x.tipo].movil);
+    const kmDia = moviles.length ? Math.min(...moviles.map((x) => tipos()[x.tipo].km_dia)) : 30;
+    op.horasLlegada = Math.round((km / kmDia) * 24 * 0.6);
+  }
   // La aviación asignada sale en esta fase (si se eligió para la fase); la enemiga en alerta, también.
   const conAire = (op.aviacion ?? []).length && op.aviacionFases?.[fase] !== false;
   op.aire = aireEnFase(conAire ? op : { ...op, aviacion: [] }, objetivoActual(op), enemigosEn(op.pais, objetivoActual(op)).length);
@@ -404,6 +447,7 @@ function iniciarFase(op, fase) {
 
 function atacantesEnPosicion(op, objetivo) {
   const ady = new Set(datos.provincias[objetivo].conexiones.filter((c) => datos.duenos[c.j] === op.pais).map((c) => c.j));
+  if (esDesembarco(op, objetivo)) ady.add(op.eje);
   return fuerzasDe(op).filter((b) => !b.mov && ady.has(b.provincia));
 }
 
@@ -418,6 +462,8 @@ function cerrarFase(op, extra = {}) {
   op.bajas.enemigas += bajasEnemigas;
   sumarBajas(op.pais, bajasPropias);
   sumarBajas(op.enemigo, bajasEnemigas);
+  sumarBajasVoluntad(op.pais, bajasPropias);
+  sumarBajasVoluntad(op.enemigo, bajasEnemigas);
   if (op.aire?.texto) extra = { ...extra, aire: op.aire.texto };
   return { fase: op.fase, provincia: datos.provincias[objetivo].nombre, bajasPropias: Math.round(bajasPropias), bajasEnemigas: Math.round(bajasEnemigas), ...extra };
 }
@@ -498,16 +544,18 @@ function horaDeFase(op) {
       suministro: suministroEn(op.pais, objetivo),
       defensaExtra: op.fase === 'explotacion' ? c.fases.explotacion.organizacion_defensor_sorprendido : 1,
     };
-    // Una provincia vacía se toma cuando las tropas llegan (medio día de marcha).
-    if (!defensores.length && op.fase === 'explotacion' && op.horasFase < c.fases.explotacion.horas_por_provincia / 2) return;
-    let r = { fin: defensores.length ? null : 'quebrados' };
-    if (!r.fin) r = horaDeCombate(op, atacantes, defensores, objetivo, ctx);
-    if (!r.fin) op.sumaVentaja += r.ventaja;
+    // En la explotación, primero las tropas tienen que llegar.
+    if (op.fase === 'explotacion' && op.horasFase <= (op.horasLlegada ?? 0)) return;
+    // Sin brigadas enemigas, pelea la guarnición territorial (si la hay).
+    const contra = defensores.length ? defensores : (op.guarnicion && op.guarnicion.organizacion > C().desgaste.organizacion_minima_para_pelear ? [op.guarnicion] : []);
+    let r = { fin: contra.length ? null : 'quebrados' };
+    if (!r.fin) r = horaDeCombate(op, atacantes, contra, objetivo, ctx);
+    if (!r.fin) { op.sumaVentaja += r.ventaja; op.horasCombate = (op.horasCombate ?? 0) + 1; }
     limpiarDestruidas(op);
-    const limite = op.fase === 'ruptura' ? c.fases.ruptura.horas : c.fases.explotacion.horas_por_provincia;
+    const limite = op.fase === 'ruptura' ? c.fases.ruptura.horas : c.fases.explotacion.horas_por_provincia + (op.horasLlegada ?? 0);
     if (!r.fin && op.horasFase < limite) return;
 
-    const horas = Math.max(1, op.horasFase - (r.fin ? 1 : 0));
+    const horas = Math.max(1, op.horasCombate ?? 0);
     const media = op.sumaVentaja / horas;
     let res = r.fin === 'quebrados' ? 'ruptura' : resultadoPorVentaja(media).clave;
     if (r.fin === 'agotados' && (res === 'avance' || res === 'ruptura')) res = 'estancamiento';
@@ -561,6 +609,14 @@ function aplicarResultado(op, res, media, fin) {
   if (op.fase === 'explotacion') {
     op.avanceExplotacion++;
     const maximo = c.fases.explotacion.provincias_maximas + (C().posturas[op.postura].explotacion_extra && op.postura === 'blindado' ? 1 : 0);
+    const siguiente = op.objetivos[op.objetivoActual + 1];
+    const llegaSuministro = siguiente !== undefined && suministroEn(op.pais, siguiente) >= datos.reglas.suministro.umbral_amarillo;
+    if (avanzo && quedanObjetivos && !llegaSuministro) {
+      terminar(op, `La explotación se frena en ${nombre}: el suministro no llega más lejos.`, 'info');
+      op.decision = { ...resumen, final: true, texto: `${resumen.texto} El suministro no alcanza para seguir avanzando.` };
+      if (op.pais === datos.escenario.pais_jugador) avisar('decision', op);
+      return;
+    }
     if (avanzo && quedanObjetivos && op.avanceExplotacion < maximo) {
       op.objetivoActual++;
       op.ejeExplotacion = objetivo;
@@ -569,7 +625,7 @@ function aplicarResultado(op, res, media, fin) {
     }
     terminar(op, `Fin de la explotación en ${nombre}: ${avanzo ? 'se tomaron' : 'se frenó el avance tras tomar'} ${op.objetivoActual + (avanzo ? 1 : 0)} provincia(s).`, avanzo ? 'bueno' : 'info');
     op.decision = { ...resumen, final: true };
-    avisar('decision', op);
+    if (op.pais === datos.escenario.pais_jugador) avisar('decision', op);
     return;
   }
   resumen.siguiente = res === 'ruptura' && (moviles || quedanObjetivos) ? 'explotacion'
@@ -616,6 +672,10 @@ export function decidir(op, eleccion) {
         .filter((c) => datos.duenos[c.j] === op.enemigo)
         .sort((a, b) => enemigosEn(op.pais, a.j).length - enemigosEn(op.pais, b.j).length)[0];
       if (!proxima) { terminar(op, 'No hay más provincias enemigas para explotar.', 'bueno'); return; }
+      if (suministroEn(op.pais, proxima.j) < datos.reglas.suministro.umbral_amarillo) {
+        terminar(op, 'No se puede explotar: el suministro no llega más lejos.', 'info');
+        return;
+      }
       op.objetivos.push(proxima.j);
       op.objetivoActual++;
     }

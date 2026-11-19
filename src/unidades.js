@@ -6,17 +6,21 @@ import { geo, aLonLat } from './geo.js';
 import { ejercito, avanceTramo, enGuerra } from './ejercito.js';
 import { operaciones } from './operaciones.js';
 import { FUENTE_ETIQUETAS } from './etiquetas.js';
-import { dibujarPictograma } from './simbolos.js';
-import { aviacion } from './aviacion.js';
+import { dibujarPictograma, dibujarSilueta } from './simbolos.js';
+import { aviacion, modelo } from './aviacion.js';
 import { suministro } from './suministro.js';
 import { tiempo } from './tiempo.js';
+import { marina, totalBarcos, posicionFlota } from './marina.js';
 
 const ANCHO = 34;
 const ALTO = 22;
 const ORDEN_TIPOS = ['blindada', 'mecanizada', 'montana', 'infanteria'];
 const BRONCE = 'rgb(226, 196, 120)';
 
-let fichas = []; // zonas clicables: {x, y, w, h, ids, pais, provincia}
+let fichas = []; // zonas clicables: {x, y, w, h, ids, pais, provincia} o {escuadron}
+let posiciones = []; // {id, x, y} de cada brigada dibujada
+// Desde este zoom cada brigada tiene su propia ficha.
+export const ZOOM_INDIVIDUAL = 1.5;
 
 export function fichaEn(x, y) {
   for (let k = fichas.length - 1; k >= 0; k--) {
@@ -40,14 +44,16 @@ const centroPantalla = (camara, prov) => {
 
 export function dibujarUnidades(ctx, camara, vista) {
   fichas = [];
+  posiciones = [];
   const { jugador, seleccion, plan, rutaVista } = vista;
   ctx.save();
 
   if (vista.vista === 'suministro') dibujarRutasSuministro(ctx, camara, jugador);
   dibujarDepositos(ctx, camara, jugador, vista.vista === 'suministro');
-  dibujarBasesAereas(ctx, camara, jugador);
+  dibujarBasesAereas(ctx, camara, jugador, vista.escuadron);
   if (vista.alcance) dibujarAlcance(ctx, camara, vista.alcance);
   dibujarVuelos(ctx, camara, jugador);
+  dibujarMar(ctx, camara, jugador, vista.flota);
 
   // Flechas de las Operaciones en curso
   for (const op of operaciones.lista) {
@@ -86,8 +92,10 @@ export function dibujarUnidades(ctx, camara, vista) {
     linea(ctx, puntos, seleccion.has(b.id) ? 'rgba(255, 245, 210, 0.95)' : 'rgba(255, 245, 210, 0.55)', true, true);
   }
 
-  // Fichas: agrupadas por provincia y país; las que marchan, sueltas.
-  const grupos = new Map();
+  // Fichas: de lejos agrupadas por provincia y país; de cerca, una por brigada.
+  // Las que marchan van sueltas sobre su ruta.
+  const individual = camara.zoom >= ZOOM_INDIVIDUAL;
+  const porProvincia = new Map();
   for (const b of ejercito.brigadas) {
     const visible = b.pais === jugador || enGuerra(jugador, b.pais) || camara.zoom >= 1.0;
     if (!visible) continue;
@@ -95,28 +103,33 @@ export function dibujarUnidades(ctx, camara, vista) {
       dibujarFicha(ctx, posicionBrigada(camara, b), [b], seleccion);
       continue;
     }
-    const k = `${b.provincia}|${b.pais}`;
-    if (!grupos.has(k)) grupos.set(k, []);
-    grupos.get(k).push(b);
+    if (!porProvincia.has(b.provincia)) porProvincia.set(b.provincia, []);
+    porProvincia.get(b.provincia).push(b);
   }
-  const porProvincia = new Map();
-  for (const [k, lista] of grupos) {
-    const prov = Number(k.split('|')[0]);
-    if (!porProvincia.has(prov)) porProvincia.set(prov, []);
-    porProvincia.get(prov).push(lista);
-  }
-  for (const [prov, listas] of porProvincia) {
-    listas.sort((a, b) => (a[0].pais === jugador ? -1 : b[0].pais === jugador ? 1 : 0));
+  for (const [prov, lista] of porProvincia) {
+    lista.sort((a, b) => (a.pais === jugador) - (b.pais === jugador) || a.pais.localeCompare(b.pais) || a.id - b.id).reverse();
     const c = centroPantalla(camara, prov);
-    const totalAncho = listas.length * (ANCHO + 6) - 6;
-    listas.forEach((lista, i) => {
-      const pos = { x: c.x - totalAncho / 2 + i * (ANCHO + 6) + ANCHO / 2, y: c.y - 24 };
-      dibujarFicha(ctx, pos, lista, seleccion);
+    // Grupos a dibujar: cada brigada sola (de cerca) o una ficha por país (de lejos)
+    let grupos;
+    if (individual) grupos = lista.map((b) => [b]);
+    else {
+      const m = new Map();
+      for (const b of lista) { if (!m.has(b.pais)) m.set(b.pais, []); m.get(b.pais).push(b); }
+      grupos = [...m.values()];
+    }
+    const cols = Math.min(individual ? 4 : 3, grupos.length);
+    const filas = Math.ceil(grupos.length / cols);
+    const pasoX = ANCHO + 5;
+    const pasoY = ALTO + 9;
+    const x0 = c.x - ((cols - 1) * pasoX) / 2;
+    const y0 = c.y - 24 - ((filas - 1) * pasoY) / 2;
+    grupos.forEach((g, k) => {
+      const pos = { x: x0 + (k % cols) * pasoX, y: y0 + Math.floor(k / cols) * pasoY };
+      dibujarFicha(ctx, pos, g, seleccion);
     });
-    const enCombate = listas.some((l) => l.some((b) => b.enCombate));
-    if (enCombate) {
+    if (lista.some((b) => b.enCombate)) {
       ctx.beginPath();
-      ctx.arc(c.x, c.y - 24, Math.max(22, totalAncho / 2 + 10), 0, Math.PI * 2);
+      ctx.ellipse(c.x, c.y - 24, Math.max(24, (cols * pasoX) / 2 + 8), Math.max(20, (filas * pasoY) / 2 + 8), 0, 0, Math.PI * 2);
       ctx.strokeStyle = 'rgba(230, 70, 50, 0.9)';
       ctx.lineWidth = 2;
       ctx.setLineDash([4, 3]);
@@ -125,6 +138,11 @@ export function dibujarUnidades(ctx, camara, vista) {
     }
   }
   ctx.restore();
+}
+
+// Posiciones en pantalla de las brigadas propias (para la selección con caja).
+export function posicionesBrigadas() {
+  return posiciones;
 }
 
 function posicionBrigada(camara, b) {
@@ -142,6 +160,7 @@ function dibujarFicha(ctx, centro, lista, seleccion) {
   const elegida = lista.some((b) => seleccion.has(b.id));
   const formando = lista.every((b) => b.formacion);
   fichas.push({ x: x - 2, y: y - 2, w: ANCHO + 4, h: ALTO + 8, ids: lista.map((b) => b.id), pais, provincia: lista[0].provincia });
+  for (const b of lista) posiciones.push({ id: b.id, pais, x: centro.x, y: centro.y });
 
   ctx.globalAlpha = formando ? 0.55 : 1;
   ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
@@ -299,32 +318,43 @@ function dibujarDepositos(ctx, camara, jugador, destacar) {
 
 // ------------------------------------------------------------------ aviación
 
-function dibujarBasesAereas(ctx, camara, jugador) {
+// Cada escuadrón es una ficha en su base, con la silueta de su avión y la cantidad.
+function dibujarBasesAereas(ctx, camara, jugador, escuadronElegido) {
   const porBase = new Map();
   for (const e of aviacion.escuadrones) {
-    if (e.pais !== jugador && camara.zoom < 1.2) continue;
+    if (e.pais !== jugador && !enGuerra(jugador, e.pais) && camara.zoom < 1.2) continue;
     if (!porBase.has(e.base)) porBase.set(e.base, []);
     porBase.get(e.base).push(e);
   }
   for (const [base, lista] of porBase) {
     const b = datos.bases[base];
     const p = camara.mundoAPantalla(b.x, b.y);
-    const aviones = lista.reduce((s, e) => s + e.aviones, 0);
-    const x = Math.round(p.x + 8);
-    const y = Math.round(p.y - 22);
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fillRect(x + 1, y + 2, 40, 18);
-    ctx.fillStyle = colorPais(lista[0].pais, 0.35);
-    ctx.fillRect(x, y, 40, 18);
-    ctx.strokeStyle = 'rgba(10,10,10,0.9)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x + 0.5, y + 0.5, 39, 17);
-    dibujarPictograma(ctx, 'avion', x + 2, y + 2, 18, 14);
-    ctx.font = `600 12px ${FUENTE_ETIQUETAS}`;
+    lista.forEach((e, k) => {
+      const x = Math.round(p.x + 9);
+      const y = Math.round(p.y - 12 - k * 22);
+      const elegido = e.id === escuadronElegido;
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.fillRect(x + 1, y + 2, 46, 19);
+      ctx.fillStyle = colorPais(e.pais, 0.35);
+      ctx.fillRect(x, y, 46, 19);
+      ctx.lineWidth = elegido ? 2.5 : 1;
+      ctx.strokeStyle = elegido ? BRONCE : 'rgba(10,10,10,0.9)';
+      ctx.strokeRect(x + 0.5, y + 0.5, 45, 18);
+      dibujarSilueta(ctx, modelo(e.modelo).silueta, x + 10, y + 9.5, 17, e.ocupado ? 'rgba(255,255,255,0.55)' : '#fff');
+      ctx.font = `600 12px ${FUENTE_ETIQUETAS}`;
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'left';
+      ctx.fillText(String(e.aviones), x + 22, y + 14);
+      fichas.push({ x, y, w: 46, h: 19, ids: [], escuadron: e.id, pais: e.pais, base });
+    });
+    // Punto de la base
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
     ctx.fillStyle = '#fff';
-    ctx.textAlign = 'left';
-    ctx.fillText(String(aviones), x + 21, y + 13.5);
-    fichas.push({ x, y, w: 40, h: 18, ids: [], escuadrones: lista.map((e) => e.id), pais: lista[0].pais, base });
+    ctx.fill();
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1;
+    ctx.stroke();
   }
 }
 
@@ -361,11 +391,7 @@ function dibujarVuelos(ctx, camara, jugador) {
       if (v.estado === 'esperando') continue;
       const pos = { x: origen.x + (destino.x - origen.x) * t, y: origen.y + (destino.y - origen.y) * t + k * 6 };
       const ang = Math.atan2(destino.y - origen.y, destino.x - origen.x) + (v.estado === 'vuelta' ? Math.PI : 0) + Math.PI / 2;
-      ctx.save();
-      ctx.translate(pos.x, pos.y);
-      ctx.rotate(ang);
-      dibujarPictograma(ctx, 'avion', -10, -7, 20, 14, colorPais(g.e.pais, -0.3));
-      ctx.restore();
+      dibujarSilueta(ctx, modelo(g.e.modelo).silueta, pos.x, pos.y, 22, colorPais(g.e.pais, -0.3), ang);
     }
     // Estallido sobre el blanco en la hora del ataque
     if (v.estado === 'vuelta' && ahora - v.llegada < 2) {
@@ -375,5 +401,62 @@ function dibujarVuelos(ctx, camara, jugador) {
       ctx.lineWidth = 3;
       ctx.stroke();
     }
+  }
+}
+
+// ------------------------------------------------------------------ marina
+
+function dibujarMar(ctx, camara, jugador, flotaElegida) {
+  // Nombres de las zonas marítimas y quién las controla
+  if (camara.zoom < 2.6) {
+    ctx.textAlign = 'center';
+    for (const z of Object.values(datos.zonas)) {
+      const p = camara.mundoAPantalla(z.x, z.y);
+      if (p.x < -100 || p.y < -50 || p.x > camara.ancho + 100 || p.y > camara.alto + 50) continue;
+      const dueno = marina.control[z.clave];
+      ctx.font = `italic 500 13px ${FUENTE_ETIQUETAS}`;
+      ctx.fillStyle = 'rgba(190, 215, 240, 0.55)';
+      ctx.fillText(z.nombre.toUpperCase(), p.x, p.y + 30);
+      if (dueno) {
+        ctx.fillStyle = colorPais(dueno, 0);
+        ctx.globalAlpha = 0.8;
+        ctx.fillRect(p.x - 14, p.y + 34, 28, 3);
+        ctx.globalAlpha = 1;
+      }
+    }
+    ctx.textAlign = 'left';
+  }
+  // Flotas: una ficha por flota en su zona (o navegando)
+  const porZona = new Map();
+  for (const f of marina.flotas) {
+    if (!totalBarcos(f)) continue;
+    if (f.pais !== jugador && !enGuerra(jugador, f.pais) && camara.zoom < 0.9) continue;
+    const pos = posicionFlota(f);
+    const k = f.viaje ? `v${f.id}` : f.zona;
+    if (!porZona.has(k)) porZona.set(k, []);
+    porZona.get(k).push({ f, pos });
+  }
+  for (const lista of porZona.values()) {
+    lista.forEach(({ f, pos }, i) => {
+      const c = camara.mundoAPantalla(pos.x, pos.y);
+      const x = Math.round(c.x - 22 + (i % 3) * 46 - ((Math.min(lista.length, 3) - 1) * 46) / 2);
+      const y = Math.round(c.y - 10 - Math.floor(i / 3) * 24);
+      const elegida = f.id === flotaElegida;
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.fillRect(x + 1, y + 2, 44, 20);
+      ctx.fillStyle = colorPais(f.pais, 0.35);
+      ctx.fillRect(x, y, 44, 20);
+      ctx.lineWidth = elegida ? 2.5 : 1;
+      ctx.strokeStyle = elegida ? BRONCE : 'rgba(10,10,10,0.9)';
+      ctx.strokeRect(x + 0.5, y + 0.5, 43, 19);
+      dibujarPictograma(ctx, 'barco', x + 2, y + 2, 22, 16);
+      ctx.font = `600 12px ${FUENTE_ETIQUETAS}`;
+      ctx.fillStyle = '#fff';
+      ctx.fillText(String(totalBarcos(f)), x + 26, y + 14.5);
+      if (f.viaje && f.pais === jugador) {
+        linea(ctx, [{ x: c.x, y: c.y }, ...f.viaje.ruta.map((z) => camara.mundoAPantalla(datos.zonas[z].x, datos.zonas[z].y))], 'rgba(170, 210, 255, 0.8)', true, true);
+      }
+      fichas.push({ x, y, w: 44, h: 20, ids: [], flota: f.id, pais: f.pais });
+    });
   }
 }

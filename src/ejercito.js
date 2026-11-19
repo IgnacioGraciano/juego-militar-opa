@@ -8,6 +8,8 @@
 import { datos, cambiarDueno, nombrePais } from './datos.js';
 import { hayEquipo, gastarEquipo, equipoPorTipo } from './economia.js';
 import { factorRecuperacion, zona, suministroEn } from './suministro.js';
+import { factorTanque } from './disenador.js';
+import { enlacesMaritimos } from './marina.js';
 
 export const ejercito = {
   brigadas: [],
@@ -122,7 +124,15 @@ export function puedeEntrar(pais, j) {
   return d === pais || enGuerra(pais, d);
 }
 
+// Vecinas por tierra (y estrechos) más los pasos por mar que habilita la marina.
+export function conexionesDe(pais, u) {
+  return [...datos.provincias[u].conexiones, ...enlacesMaritimos(pais, u)];
+}
+
+const VELOCIDAD_POR_MAR = 25; // km por hora a bordo de un transporte
+
 export function velocidadKmHora(b, conexion) {
+  if (conexion.maritimo) return VELOCIDAD_POR_MAR;
   const t = datos.provincias[conexion.j].terreno;
   const m = R().movimiento;
   let v = tipos()[b.tipo].km_dia * (m[t]?.[b.tipo] ?? 1);
@@ -146,7 +156,7 @@ export function calcularRuta(b, destino, desde = b.provincia) {
     for (let i = 0; i < n; i++) if (!hecho[i] && horas[i] < mejor) { mejor = horas[i]; u = i; }
     if (u < 0 || u === destino) break;
     hecho[u] = 1;
-    for (const c of datos.provincias[u].conexiones) {
+    for (const c of conexionesDe(b.pais, u)) {
       if (hecho[c.j] || !puedeEntrar(b.pais, c.j)) continue;
       if (enemigosEn(b.pais, c.j).length) continue;
       const h = mejor + c.km / velocidadKmHora(b, c);
@@ -175,7 +185,7 @@ function nuevaBrigada(pais, tipo, provincia, extra = {}) {
     efectivos,
     efectivosMax: efectivos,
     entrenamiento: extra.entrenamiento ?? ley.entrenamiento,
-    equipo: ejercito.equipo[pais] ?? 1,
+    equipo: (ejercito.equipo[pais] ?? 1) * (tipo === 'blindada' || tipo === 'mecanizada' ? factorTanque(pais) : 1),
     moral: 1,
     organizacion: 1,
     atrincheramiento: 0,
@@ -375,7 +385,7 @@ export function ordenarMovimiento(b, destino) {
 // Fracción recorrida del tramo actual (0 a 1) para dibujar.
 export function avanceTramo(b) {
   if (!b.mov) return 0;
-  const c = datos.provincias[b.provincia].conexiones.find((x) => x.j === b.mov.ruta[0]);
+  const c = conexionesDe(b.pais, b.provincia).find((x) => x.j === b.mov.ruta[0]);
   return c ? Math.min(1, b.mov.recorrido / c.km) : 0;
 }
 
@@ -384,7 +394,7 @@ export function horasRestantes(b) {
   let h = 0;
   let desde = b.provincia;
   b.mov.ruta.forEach((j, k) => {
-    const c = datos.provincias[desde].conexiones.find((x) => x.j === j);
+    const c = conexionesDe(b.pais, desde).find((x) => x.j === j);
     if (c) h += (c.km - (k === 0 ? b.mov.recorrido : 0)) / velocidadKmHora(b, c);
     desde = j;
   });
@@ -393,7 +403,7 @@ export function horasRestantes(b) {
 
 function moverUnaHora(b) {
   const sig = b.mov.ruta[0];
-  const c = datos.provincias[b.provincia].conexiones.find((x) => x.j === sig);
+  const c = conexionesDe(b.pais, b.provincia).find((x) => x.j === sig);
   if (!c || !puedeEntrar(b.pais, sig)) {
     b.mov = null;
     return;

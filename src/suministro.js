@@ -7,6 +7,7 @@
 
 import { datos } from './datos.js';
 import { distanciaKm } from './geo.js';
+import { enlacesSuministroMar, factorBloqueo } from './marina.js';
 import { ejercito, mensaje, avisar, enemigosDe } from './ejercito.js';
 
 export const suministro = {
@@ -119,7 +120,7 @@ function caminos(pais, inicios, costo, extenderAfuera = false) {
     if (u < 0) break;
     hecho[u] = 1;
     if (datos.duenos[u] !== pais) continue; // se llega a la provincia ajena pero no se sigue
-    for (const c of datos.provincias[u].conexiones) {
+    for (const c of [...datos.provincias[u].conexiones, ...enlacesSuministroMar(pais, u)]) {
       if (hecho[c.j]) continue;
       if (datos.duenos[c.j] !== pais && !extenderAfuera) continue;
       const d = mejor + costo(c);
@@ -139,13 +140,15 @@ export function recalcular(pais) {
 
   // Países con el territorio principal fuera del mapa (Malvinas, Guayana Francesa): llegan por mar.
   if (capitalOriginal(pais) < 0) {
-    for (let j = 0; j < n; j++) if (datos.duenos[j] === pais) valores[j] = r.valor_amarillo;
+    for (let j = 0; j < n; j++) if (datos.duenos[j] === pais) valores[j] = r.valor_amarillo * factorBloqueo(pais, j);
     suministro.valores[pais] = valores;
     return;
   }
 
   // 1. Rutas desde la capital hasta cada depósito
-  const costoRuta = (c) => c.km * (c.tren ? r.factor_tren : 1) * (c.estrecho ? r.factor_estrecho : 1) * (1 + 3 * dano[c.j]);
+  // El tren de una provincia ocupada no sirve hasta repararlo (por ahora, nunca): el ocupante va por ruta.
+  const trenPropio = (c) => c.tren && datos.provincias[c.j].pais === pais;
+  const costoRuta = (c) => c.km * (c.maritimo ? 1.5 : 1) * (trenPropio(c) ? r.factor_tren : 1) * (c.estrecho ? r.factor_estrecho : 1) * (1 + 3 * dano[c.j]);
   const desdeCapital = capital >= 0 ? caminos(pais, [{ j: capital, d: 0 }], costoRuta) : null;
   const fuentes = capital >= 0 ? [{ j: capital, d: 0 }] : [];
   for (const d of depositosDe(pais)) {
@@ -163,7 +166,7 @@ export function recalcular(pais) {
 
   // 2. Cobertura de cada fuente (también un paso dentro de territorio enemigo, para atacar)
   if (fuentes.length) {
-    const cobertura = caminos(pais, fuentes, (c) => c.km * (c.tren ? 0.7 : 1) * (1 + 2 * dano[c.j]), true);
+    const cobertura = caminos(pais, fuentes, (c) => c.km * (trenPropio(c) ? 0.7 : 1.15) * (1 + 2 * dano[c.j]), true);
     for (let j = 0; j < n; j++) if (Number.isFinite(cobertura.dist[j])) valores[j] = valorPorDistancia(cobertura.dist[j]);
   }
   suministro.valores[pais] = valores;

@@ -1,0 +1,31 @@
+{
+  "_comentario": "Eventos con fecha del escenario 1978 (modo histórico). pais: a quién le pasa. opciones: texto y efectos (mismos efectos que el árbol nacional).",
+  "fuente": "Elaboración propia a partir de la historia del período. A verificar.",
+  "eventos": [
+    {
+      "id": "laudo_beagle", "fecha": "1978-01-25", "pais": "ARG",
+      "titulo": "El laudo del Beagle",
+      "texto": "La Corte Arbitral dio las islas Picton, Lennox y Nueva a Chile. La Junta tiene que decidir qué hacer.",
+      "opciones": [
+        { "texto": "Declararlo nulo", "efectos": { "nodo": "rechazo_laudo", "relacion": { "CHL": -15 }, "tension": 4, "voluntad": 3 } },
+        { "texto": "Acatarlo a regañadientes", "efectos": { "relacion": { "CHL": 15 }, "estabilidad": -6, "voluntad": -5, "fin_reclamo": "CHL" } }
+      ]
+    },
+    {
+      "id": "embargo_eeuu", "fecha": "1978-10-01", "pais": "ARG",
+      "titulo": "Enmienda Humphrey-Kennedy",
+      "texto": "Estados Unidos corta la venta de armas a la Argentina por las violaciones a los derechos humanos.",
+      "opciones": [ { "texto": "Buscar otros proveedores", "efectos": { "estabilidad": -2 } } ]
+    },
+    {
+      "id": "navidad_1978", "fecha": "1978-12-21", "pais": "ARG",
+      "titulo": "La noche del 21 de diciembre",
+      "texto": "La flota está en el mar y las tropas en la frontera. El Papa ofrece enviar un mediador.",
+      "requiere_nodo": "operacion_soberania",
+      "opciones": [
+        { "texto": "Aceptar al mediador", "efectos": { "nodo": "mediacion_papal", "relacion": { "CHL": 30 }, "tension": -12, "fin_reclamo": "CHL" } },
+        { "texto": "Seguir adelante", "efectos": { "tension": 6, "voluntad": 4 } }
+      ]
+    }
+  ]
+}

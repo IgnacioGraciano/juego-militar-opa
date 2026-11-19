@@ -1,0 +1,187 @@
+{
+  "_comentario": "Zonas marítimas: centro en grados (lon, lat) y zonas vecinas. Una provincia costera pertenece a las zonas cuyo centro está a menos de 'radio_km'.",
+  "fuente": "Elaboración propia",
+  "radio_km": 950,
+  "zonas": {
+    "caribe": {
+      "nombre": "Mar Caribe",
+      "centro": [
+        -72,
+        13.6
+      ],
+      "vecinas": [
+        "atl_ecuatorial",
+        "pac_colombia"
+      ]
+    },
+    "atl_ecuatorial": {
+      "nombre": "Atlántico Ecuatorial",
+      "centro": [
+        -44,
+        3
+      ],
+      "vecinas": [
+        "caribe",
+        "atl_brasil"
+      ]
+    },
+    "atl_brasil": {
+      "nombre": "Atlántico Brasileño",
+      "centro": [
+        -33,
+        -12
+      ],
+      "vecinas": [
+        "atl_ecuatorial",
+        "atl_sur_brasil"
+      ]
+    },
+    "atl_sur_brasil": {
+      "nombre": "Atlántico Sur de Brasil",
+      "centro": [
+        -42,
+        -29
+      ],
+      "vecinas": [
+        "atl_brasil",
+        "plata"
+      ]
+    },
+    "plata": {
+      "nombre": "Río de la Plata",
+      "centro": [
+        -51.5,
+        -38.5
+      ],
+      "vecinas": [
+        "atl_sur_brasil",
+        "mar_argentino"
+      ]
+    },
+    "mar_argentino": {
+      "nombre": "Mar Argentino",
+      "centro": [
+        -57,
+        -46
+      ],
+      "vecinas": [
+        "plata",
+        "mar_austral",
+        "malvinas"
+      ]
+    },
+    "mar_austral": {
+      "nombre": "Mar Argentino Austral",
+      "centro": [
+        -62.5,
+        -51.5
+      ],
+      "vecinas": [
+        "mar_argentino",
+        "malvinas",
+        "drake"
+      ]
+    },
+    "malvinas": {
+      "nombre": "Aguas de Malvinas",
+      "centro": [
+        -55.5,
+        -54.6
+      ],
+      "vecinas": [
+        "mar_argentino",
+        "mar_austral",
+        "drake",
+        "georgias"
+      ]
+    },
+    "georgias": {
+      "nombre": "Georgias del Sur",
+      "centro": [
+        -37,
+        -55
+      ],
+      "vecinas": [
+        "malvinas"
+      ]
+    },
+    "drake": {
+      "nombre": "Pasaje de Drake",
+      "centro": [
+        -66,
+        -58.2
+      ],
+      "vecinas": [
+        "mar_austral",
+        "malvinas",
+        "pac_austral"
+      ]
+    },
+    "pac_austral": {
+      "nombre": "Pacífico Austral",
+      "centro": [
+        -80,
+        -47.5
+      ],
+      "vecinas": [
+        "drake",
+        "pac_central"
+      ]
+    },
+    "pac_central": {
+      "nombre": "Pacífico Central",
+      "centro": [
+        -78.5,
+        -34
+      ],
+      "vecinas": [
+        "pac_austral",
+        "pac_norte"
+      ]
+    },
+    "pac_norte": {
+      "nombre": "Pacífico Norte",
+      "centro": [
+        -75.5,
+        -22.5
+      ],
+      "vecinas": [
+        "pac_central",
+        "mar_de_grau"
+      ]
+    },
+    "mar_de_grau": {
+      "nombre": "Mar de Grau",
+      "centro": [
+        -81.5,
+        -11
+      ],
+      "vecinas": [
+        "pac_norte",
+        "pac_ecuatorial"
+      ]
+    },
+    "pac_ecuatorial": {
+      "nombre": "Pacífico Ecuatorial",
+      "centro": [
+        -83,
+        -1
+      ],
+      "vecinas": [
+        "mar_de_grau",
+        "pac_colombia"
+      ]
+    },
+    "pac_colombia": {
+      "nombre": "Pacífico Colombiano",
+      "centro": [
+        -80.5,
+        5
+      ],
+      "vecinas": [
+        "pac_ecuatorial",
+        "caribe"
+      ]
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "_comentario": "Tanques y blindados. ataque y defensa relativos (1 = M4 Sherman). Las brigadas blindadas y mecanizadas nuevas usan el tanque que el país tiene en producción. fabricable_en: países que lo hacen.",
+  "fuente": "Primera versión con fichas técnicas generales. A verificar con SIPRI y Jane's.",
+  "modelos": {
+    "m4": { "nombre": "M4 Sherman", "origen": "USA", "ataque": 1.0, "defensa": 1.0, "velocidad_kmh": 40, "canon_mm": 75, "blindaje_mm": 76, "costo": 6 },
+    "m41": { "nombre": "M41 Walker Bulldog", "origen": "USA", "ataque": 1.05, "defensa": 0.85, "velocidad_kmh": 72, "canon_mm": 76, "blindaje_mm": 38, "costo": 7 },
+    "amx13": { "nombre": "AMX-13", "origen": "FRA", "ataque": 1.15, "defensa": 0.8, "velocidad_kmh": 60, "canon_mm": 90, "blindaje_mm": 40, "costo": 8 },
+    "t55": { "nombre": "T-55", "origen": "URS", "ataque": 1.45, "defensa": 1.4, "velocidad_kmh": 50, "canon_mm": 100, "blindaje_mm": 200, "costo": 10 },
+    "amx30": { "nombre": "AMX-30", "origen": "FRA", "ataque": 1.6, "defensa": 1.35, "velocidad_kmh": 65, "canon_mm": 105, "blindaje_mm": 80, "costo": 14 },
+    "tam": { "nombre": "TAM", "origen": "ARG", "ataque": 1.55, "defensa": 1.2, "velocidad_kmh": 75, "canon_mm": 105, "blindaje_mm": 50, "costo": 11, "fabricable_en": ["ARG"] }
+  }
+}

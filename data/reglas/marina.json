@@ -1,0 +1,20 @@
+{
+  "_comentario": "Marina (paso 9, primera versión). Combate naval en 3 pasos: detección, ataque aéreo y misiles, artillería. Valores a ajustar probando.",
+  "fuente": "Reglas del juego (elaboración propia)",
+  "misiones": {
+    "patrullar": { "nombre": "Patrullar", "texto": "Controla la zona y detecta al enemigo." },
+    "bloquear": { "nombre": "Bloquear", "texto": "Corta el comercio y el suministro por mar del enemigo en la zona." },
+    "escoltar": { "nombre": "Escoltar convoyes", "texto": "Protege tu comercio y suministro por mar en la zona." },
+    "puerto": { "nombre": "En puerto", "texto": "Quieta y a resguardo; no controla la zona." }
+  },
+  "km_por_nudo_por_dia": 44,
+  "primer_golpe": 1.35,
+  "impactos_por_punto": 0.18,
+  "defensa_antiaerea_por_punto": 0.12,
+  "aviones_por_impacto": 6,
+  "alcance_aereo_km": 700,
+  "bloqueo_suministro": 0.45,
+  "bloqueo_divisas_por_zona": 0.15,
+  "desembarco": 0.6,
+  "km_desembarco": 400
+}

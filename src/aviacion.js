@@ -25,6 +25,7 @@ const azar = () => Math.random();
 // ------------------------------------------------------------------ modelos
 
 const calculados = new Map();
+export const olvidarModelo = (clave) => calculados.delete(clave);
 // Modelo con sus valores de juego (aire y ataque) calculados con la fórmula fija.
 export function modelo(clave) {
   if (!clave) return null;
@@ -327,7 +328,8 @@ function resolverPaquete(v) {
   const lineas = [];
   // 1. Detección e intercepción
   const enemigos = interceptores(p.pais, j).map((e) => ({ e, n: disponibles(e) }));
-  const probDeteccion = c.deteccion * (p.vueloBajo ? c.deteccion_vuelo_bajo / c.deteccion : 1) * (noche ? c.deteccion_noche : 1);
+  const contramedidas = Math.min(...v.grupos.map((g) => modelo(g.e.modelo).contramedidas ?? 1));
+  const probDeteccion = c.deteccion * (p.vueloBajo ? c.deteccion_vuelo_bajo / c.deteccion : 1) * (noche ? c.deteccion_noche : 1) * contramedidas;
   let perdidasPropias = 0;
   let derribados = 0;
   if (enemigos.length && azar() < probDeteccion) {
@@ -340,8 +342,9 @@ function resolverPaquete(v) {
   } else lineas.push('No había cazas enemigos en alerta.');
   // 2. Antiaéreos sobre el blanco
   const tropas = ejercito.brigadas.filter((b) => b.provincia === j && enGuerra(p.pais, b.pais)).length;
-  const fraccionAA = Math.min(0.3, tropas * c.antiaereo_por_brigada * (p.vueloBajo ? c.antiaereo_vuelo_bajo : 1));
   const atacantes = v.grupos.filter((g) => g.rol === 'ataque');
+  const blindaje = atacantes.length ? atacantes.reduce((s, g) => s + (modelo(g.e.modelo).blindaje ?? 1), 0) / atacantes.length : 1;
+  const fraccionAA = Math.min(0.3, tropas * c.antiaereo_por_brigada * (p.vueloBajo ? c.antiaereo_vuelo_bajo : 1) * blindaje);
   const caidosAA = repartirPerdidas(atacantes, fraccionAA, j);
   perdidasPropias += caidosAA;
   if (caidosAA) lineas.push(`Los antiaéreos derribaron ${caidosAA}.`);

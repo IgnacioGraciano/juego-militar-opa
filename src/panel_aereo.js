@@ -1,10 +1,11 @@
 // Planificador de paquetes de ataque (incursiones aéreas) y resumen al final.
 
 import { datos, nombrePais } from './datos.js';
-import { $, h, miles, pct, iconoUnidad, filasDatos } from './dom.js';
+import { $, h, miles, pct, dec, iconoUnidad, filasDatos, medidor } from './dom.js';
+import { svgSilueta } from './simbolos.js';
 import {
-  escuadronesDe, modelo, disponibles, enAlcance, distanciaBase, interceptores, blancosEn, planPaquete,
-  lanzarPaquete, TIPOS_PAQUETE, HORARIOS, ROLES,
+  escuadronesDe, escuadronPorId, modelo, disponibles, enAlcance, distanciaBase, interceptores, blancosEn, planPaquete,
+  lanzarPaquete, TIPOS_PAQUETE, HORARIOS, ROLES, basesDe, fijarMision, cambiarBase,
 } from './aviacion.js';
 import { ejercito, enGuerra, mensaje } from './ejercito.js';
 
@@ -24,8 +25,16 @@ export function iniciarPanelAereo(acciones) {
 
 export const paqueteActual = () => plan;
 
-export function abrirPaquete(pais, provincia) {
+export function abrirPaquete(pais, provincia, escuadronId = null) {
   plan = planPaquete(pais, provincia);
+  // Si se eligió un escuadrón en el mapa, el paquete arranca con ese solo.
+  const elegido = escuadronId != null ? escuadronPorId(escuadronId) : null;
+  if (elegido && !elegido.ocupado) {
+    const caza = modelo(elegido.modelo).rol === 'caza';
+    plan.atacantes = caza ? [] : [elegido.id];
+    plan.escoltas = caza ? [elegido.id] : [];
+    if (caza) plan.blanco = blancosEn(pais, provincia).includes('base') ? 'base' : plan.blanco;
+  }
   $('paquete').hidden = false;
   renderPaquete();
   acc.alCambiarPanel?.();
@@ -55,7 +64,7 @@ export function renderPaquete() {
     const llega = enAlcance(e, j);
     const rol = plan.atacantes.includes(e.id) ? 'ataque' : plan.escoltas.includes(e.id) ? 'escolta' : 'no';
     return h('li', { class: llega ? rol : 'no' },
-      iconoUnidad('avion', e.pais, m.nombre),
+      iconoAvion(e),
       h('div', { class: 'tropa' },
         h('div', { class: 'tropa-nombre' }, e.nombre),
         h('div', { class: 'tropa-datos' }, `${ROLES[m.rol]} · ${disponibles(e)} listos · ${miles(distanciaBase(e, j))} km de ${miles(m.radio_km)}${m.noche ? ' · vuela de noche' : ''}`)),
@@ -112,3 +121,82 @@ export function mostrarResumenIncursion(v) {
   caja.hidden = false;
 }
 
+
+// ------------------------------------------------------------------ tarjetas de avión
+
+const MAXIMOS = () => {
+  const ms = Object.keys(datos.aviones.modelos).map(modelo);
+  return {
+    velocidad: Math.max(...ms.map((m) => m.velocidad_kmh)),
+    radio: Math.max(...ms.map((m) => m.radio_km)),
+    aire: Math.max(...ms.map((m) => m.aire)),
+    ataque: Math.max(...ms.map((m) => m.ataque)),
+  };
+};
+
+// Ficha chica con la silueta del avión sobre el color del país.
+export function iconoAvion(e, clase = '') {
+  const el = h('span', { class: `icono-avion ${clase}`, style: `--pais:${datos.paises[e.pais]?.color ?? '#3d6d93'}` });
+  el.append(svgSilueta(modelo(e.modelo).silueta, modelo(e.modelo).nombre));
+  return el;
+}
+
+// Barras de velocidad, alcance, combate aéreo y ataque, comparadas con el mejor avión.
+export function barrasAvion(m) {
+  const mx = MAXIMOS();
+  const fila = (nombre, v, max, texto) => h('div', { class: 'barra-dato' }, h('span', {}, nombre), medidor(v / max), h('b', {}, texto));
+  return h('div', { class: 'barras-avion' },
+    fila('Velocidad', m.velocidad_kmh, mx.velocidad, `${miles(m.velocidad_kmh)} km/h`),
+    fila('Alcance', m.radio_km, mx.radio, `${miles(m.radio_km)} km`),
+    fila('Combate aéreo', m.aire, mx.aire, dec(m.aire)),
+    fila('Ataque a tierra', m.ataque, mx.ataque, dec(m.ataque)));
+}
+
+export function etiquetasAvion(m) {
+  const t = [ROLES[m.rol]];
+  if (m.misiles_largos) t.push('Misiles de alcance medio');
+  else if (m.misiles_cortos) t.push('Misiles de corto alcance');
+  if (m.noche) t.push('Vuela de noche');
+  if (m.todo_tiempo) t.push('Radar');
+  return h('div', { class: 'etiquetas' }, ...t.map((x) => h('span', { class: 'etiqueta' }, x)));
+}
+
+// ------------------------------------------------------------------ escuadrón elegido
+
+export function mostrarEscuadron(id) {
+  const panel = $('escuadron');
+  const e = id != null ? escuadronPorId(id) : null;
+  if (!e) { panel.hidden = true; return; }
+  const m = modelo(e.modelo);
+  const propio = e.pais === datos.escenario.pais_jugador;
+  const listos = disponibles(e);
+  const bases = basesDe(e.pais);
+  panel.replaceChildren(
+    h('div', { class: 'ficha-cabeza' },
+      h('div', { class: 'silueta-grande', style: `--pais:${datos.paises[e.pais]?.color ?? '#3d6d93'}` }, svgSilueta(m.silueta, m.nombre)),
+      h('div', { class: 'cabeza-texto' },
+        h('div', { class: 'rotulo' }, `Escuadrón · ${datos.bases[e.base].nombre}`),
+        h('h2', {}, m.nombre),
+        etiquetasAvion(m)),
+      h('button', { type: 'button', class: 'cerrar', 'aria-label': 'Soltar escuadrón', onclick: () => acc.soltarEscuadron() }, '×')),
+    h('div', { class: 'tarjetas tres' },
+      h('div', { class: 'tarjeta' }, h('span', { class: 'rotulo' }, 'Aviones'), h('b', {}, String(e.aviones)), h('small', {}, `${listos} listos hoy`)),
+      h('div', { class: 'tarjeta' }, h('span', { class: 'rotulo' }, 'Pilotos'), h('b', {}, pct(e.experiencia)), h('small', {}, 'de experiencia')),
+      h('div', { class: 'tarjeta' }, h('span', { class: 'rotulo' }, 'Estado'), h('b', {}, e.ocupado ? 'En misión' : e.mision === 'alerta' ? 'Alerta' : 'Reposo'), h('small', {}, e.ocupado ? '' : 'en la base'))),
+    barrasAvion(m),
+    propio ? h('div', { class: 'controles-escuadron' },
+      h('div', { class: 'segmentado', role: 'group', 'aria-label': 'Misión' },
+        ...[['alerta', 'En alerta'], ['reposo', 'En reposo']].map(([k, t]) => h('button', {
+          type: 'button', 'aria-pressed': String(e.mision === k), onclick: () => { fijarMision(e, k); mostrarEscuadron(id); },
+        }, t))),
+      h('label', { class: 'campo' }, h('span', {}, 'Base'), h('select', { onchange: (ev) => { const err = cambiarBase(e, Number(ev.target.value)); if (err) $('escuadron-error').textContent = err; mostrarEscuadron(id); acc.alCambiarPanel?.(); } },
+        ...bases.map((b) => h('option', { value: b.indice, selected: b.indice === e.base }, b.nombre)))),
+      h('p', { class: 'malo', id: 'escuadron-error' }),
+      h('div', { class: 'acciones fila' },
+        h('button', { type: 'button', class: 'boton principal', disabled: !!e.ocupado || !listos, onclick: () => acc.atacarConEscuadron() }, 'Atacar…'),
+        h('button', { type: 'button', class: 'boton', disabled: !!e.ocupado, onclick: () => acc.modoBase() }, 'Cambiar de base')),
+      h('p', { class: 'nota' }, 'Clic derecho en una provincia enemiga: ataque. En una provincia tuya con base: mudar el escuadrón. En alerta intercepta a los aviones enemigos dentro del círculo.'))
+      : h('p', { class: 'nota' }, `Escuadrón de ${nombrePais(e.pais)}.`),
+  );
+  panel.hidden = false;
+}
