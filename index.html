@@ -36,6 +36,7 @@
   #mapa { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
 
   .panel {
+    box-sizing: border-box;
     position: absolute;
     background: var(--panel);
     border: 1px solid var(--panel-borde);
@@ -52,23 +53,129 @@
     color: var(--tenue);
   }
 
-  /* Escenario y ayuda (arriba a la izquierda) */
-  #titulo {
+  /* Barra superior (país del jugador) */
+  #barra {
     top: calc(var(--margen) + env(safe-area-inset-top, 0px));
     left: max(var(--margen), env(safe-area-inset-left, 0px));
+    right: calc(max(var(--margen), env(safe-area-inset-right, 0px)) + 410px);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    min-width: 0;
+  }
+  .barra-pais { background: none; border: 0; padding: 4px 6px; cursor: pointer; color: var(--texto); border-radius: 2px; }
+  .barra-pais:hover { background: rgba(255, 255, 255, 0.06); }
+  .barra-pais .pais-chip { font-size: 18px; }
+  .indicadores { display: flex; gap: 2px; overflow-x: auto; min-width: 0; scrollbar-width: none; }
+  .indicador {
     display: grid;
-    gap: 6px;
-    max-width: min(440px, calc(100% - 2 * var(--margen)));
+    gap: 0;
+    padding: 2px 10px;
+    text-align: left;
+    color: var(--texto);
+    background: none;
+    border: 0;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    white-space: nowrap;
   }
-  #titulo h1 {
-    margin: 0;
-    font-family: var(--f-rotulo);
-    font-weight: 600;
-    font-size: 22px;
-    letter-spacing: 0.03em;
-    line-height: 1.1;
-    text-wrap: balance;
+  .indicador:hover { background: rgba(255, 255, 255, 0.05); }
+  .indicador .rotulo { font-size: 10.5px; }
+  .indicador b { font-family: var(--f-dato); font-weight: 500; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .barra-guerra { display: flex; align-items: center; gap: 6px; padding-left: 10px; border-left: 1px solid rgba(255, 255, 255, 0.08); white-space: nowrap; }
+  .barra-guerra .rotulo { color: var(--peligro-claro); font-size: 10.5px; }
+  .vistas { display: flex; margin-left: auto; border: 1px solid var(--apagado); border-radius: 2px; }
+  .vistas button { font: 600 13px var(--f-rotulo); letter-spacing: 0.05em; text-transform: uppercase; color: var(--tenue); background: none; border: 0; padding: 5px 9px; cursor: pointer; }
+  .vistas button[aria-pressed="true"] { background: var(--bronce); color: #1a140a; }
+  .boton-chip { background: none; border: 1px solid transparent; border-radius: 2px; padding: 1px 4px; cursor: pointer; color: var(--texto); }
+  .boton-chip:hover { border-color: var(--bronce); }
+  .chips { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+
+  #ayuda {
+    top: calc(var(--margen) + 62px + env(safe-area-inset-top, 0px));
+    left: max(var(--margen), env(safe-area-inset-left, 0px));
+    max-width: min(520px, calc(100% - 2 * var(--margen)));
+    z-index: 4;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--tenue);
   }
+  #ayuda p { margin: 6px 0 0; }
+  #ayuda kbd {
+    font-family: var(--f-dato);
+    font-size: 11px;
+    color: var(--texto);
+    border: 1px solid var(--apagado);
+    border-radius: 2px;
+    padding: 0 4px;
+  }
+  #ayuda-tactil { display: none; }
+
+  /* Panel de país */
+  #pais {
+    top: calc(var(--margen) + 62px + env(safe-area-inset-top, 0px));
+    left: max(var(--margen), env(safe-area-inset-left, 0px));
+    bottom: calc(var(--margen) + env(safe-area-inset-bottom, 0px));
+    width: min(460px, calc(100% - 2 * var(--margen)));
+    display: flex;
+    flex-direction: column;
+    z-index: 3;
+    padding-bottom: 0;
+  }
+  #pais h2 { margin: 2px 0 0; font-size: 22px; }
+  #pais h2 .pais-chip { font-size: 22px; }
+  #pais-elegir { font: 500 13px var(--f-texto); color: var(--texto); background: #1a2029; border: 1px solid var(--apagado); border-radius: 2px; padding: 4px; max-width: 150px; }
+  .pestanas { display: flex; gap: 2px; margin-top: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); overflow-x: auto; }
+  .pestanas button { font: 600 13.5px var(--f-rotulo); letter-spacing: 0.05em; text-transform: uppercase; color: var(--tenue); background: none; border: 0; border-bottom: 2px solid transparent; padding: 7px 9px; cursor: pointer; white-space: nowrap; }
+  .pestanas button[aria-selected="true"] { color: var(--bronce-claro); border-bottom-color: var(--bronce); }
+  .pais-contenido { overflow-y: auto; flex: 1; padding: 8px 2px 14px; }
+  .pais-contenido section { padding: 10px 0; border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 10px; }
+  .pais-contenido h3, #paquete h3 { margin: 0 0 6px; font: 600 14px var(--f-rotulo); letter-spacing: 0.06em; text-transform: uppercase; color: var(--bronce-claro); }
+  .pais-contenido h4 { margin: 12px 0 6px; font: 600 14px var(--f-rotulo); letter-spacing: 0.05em; text-transform: uppercase; }
+  .con-medidor { display: inline-flex; gap: 8px; align-items: center; }
+  .con-medidor .medidor { width: 90px; }
+  .malo { color: var(--peligro-claro); }
+  .clicable { cursor: pointer; }
+  .clicable:hover .tropa-nombre { color: var(--bronce-claro); }
+  .fila-controles { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .fila-controles select, .formulario select, .formulario input[type="number"] { font: 500 13px var(--f-texto); color: var(--texto); background: #1a2029; border: 1px solid var(--apagado); border-radius: 2px; padding: 3px 5px; max-width: 100%; }
+  .control { display: grid; gap: 2px; margin-bottom: 10px; }
+  .control-cabeza { display: flex; justify-content: space-between; font-size: 13.5px; }
+  .control-cabeza b { font-family: var(--f-dato); font-weight: 500; }
+  .control input { width: 100%; accent-color: var(--bronce); }
+  .control small, .sectores small, .contratos small { color: var(--tenue); font-size: 12px; }
+  .sectores, .contratos { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .sectores li, .contratos li { display: grid; gap: 3px; }
+  .sector-cabeza { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; }
+  .sectores .mini, .contratos .mini { justify-self: start; }
+  .formulario { display: grid; gap: 8px; margin-top: 12px; padding: 10px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 2px; }
+  .formulario h4 { margin: 0; }
+  .formulario label { display: grid; gap: 3px; font-size: 12.5px; color: var(--tenue); }
+  .formulario .opciones { display: grid; gap: 6px; }
+  .cotizacion { margin: 0; font-family: var(--f-dato); font-size: 13px; }
+  .reclutar-tipo { display: flex; align-items: center; gap: 6px; }
+  .reclutar-tipo .simbolo { width: 26px; height: 17px; }
+  .fila-check { display: flex; gap: 8px; align-items: center; padding: 4px 0; cursor: pointer; }
+  .fila-check input { accent-color: var(--bronce); }
+  .fila-check span { display: grid; }
+  .fila-check small { color: var(--tenue); font-size: 12px; }
+  .aviacion-plan { display: grid; gap: 2px; }
+  .posturas.horizontales { display: flex; flex-wrap: wrap; gap: 12px; }
+
+  /* Paquete de ataque */
+  #paquete {
+    top: calc(var(--margen) + 132px + env(safe-area-inset-top, 0px));
+    right: max(var(--margen), env(safe-area-inset-right, 0px));
+    bottom: calc(var(--margen) + env(safe-area-inset-bottom, 0px));
+    width: min(420px, calc(100% - 2 * var(--margen)));
+    overflow-y: auto;
+    z-index: 3;
+    padding-bottom: 0;
+  }
+  #paquete h2 { margin: 2px 0 0; font-family: var(--f-rotulo); font-weight: 600; font-size: 22px; line-height: 1.1; }
+  #paquete section { padding: 10px 0; border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 10px; }
+
   .pais-chip {
     display: inline-flex;
     align-items: center;
@@ -196,9 +303,8 @@
   .datos dd { margin: 0; min-width: 0; }
 
   /* Resumen del país */
-  #resumen { display: grid; gap: 2px; font-size: 13px; }
-  #resumen .rotulo { font-size: 11px; }
-  #resumen .guerra { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--peligro-claro); }
+  #juego:has(#pais:not([hidden])) #ficha, #juego:has(#pais:not([hidden])) #tropas { display: none; }
+  #juego:has(#paquete:not([hidden])) #registro, #juego:has(#paquete:not([hidden])) #plan { display: none; }
   .tenue { color: var(--tenue); }
 
   /* Botones */
@@ -251,16 +357,15 @@
   .lista-tropas select { font: 500 13px var(--f-texto); color: var(--texto); background: #1a2029; border: 1px solid var(--apagado); border-radius: 2px; padding: 3px; }
   .simbolo {
     flex: none;
-    width: 30px;
-    height: 20px;
+    width: 34px;
+    height: 22px;
     display: grid;
     place-items: center;
-    font-size: 12px;
-    color: #fff;
-    background: var(--pais-jugador, #3d6d93);
+    background: color-mix(in srgb, var(--pais, #3d6d93) 70%, #000);
     border: 1px solid #000;
     border-radius: 1px;
   }
+  .pictograma { width: 85%; height: 85%; fill: #fff; stroke: rgba(0, 0, 0, 0.5); stroke-width: 0.8; }
   .tropa { flex: 1; min-width: 0; }
   .tropa-nombre { font-family: var(--f-rotulo); font-weight: 600; font-size: 15px; }
   .tropa-datos { font-size: 12px; color: var(--tenue); font-variant-numeric: tabular-nums; }
@@ -330,7 +435,7 @@
   /* Modo (elegir destino u objetivo) y registro */
   #modo {
     position: absolute;
-    top: calc(var(--margen) + env(safe-area-inset-top, 0px));
+    top: calc(var(--margen) + 66px + env(safe-area-inset-top, 0px));
     left: 50%;
     transform: translateX(-50%);
     padding: 6px 14px;
@@ -403,12 +508,15 @@
   @media (max-width: 760px) {
     #ayuda-raton { display: none; }
     #ayuda-tactil { display: block; }
-    #titulo h1 { font-size: 18px; }
+    #barra { right: max(var(--margen), env(safe-area-inset-right, 0px)); flex-wrap: wrap; gap: 6px; }
+    .indicadores { order: 3; width: 100%; }
+    .barra-guerra { display: none; }
+    #pais { top: calc(var(--margen) + 110px + env(safe-area-inset-top, 0px)); }
+    #paquete { top: 30vh; }
     #reloj { top: auto; bottom: calc(var(--margen) + env(safe-area-inset-bottom, 0px)); min-width: 0; padding: 8px 10px; }
-    #resumen { display: none; }
     #fecha { font-size: 18px; }
     #ficha { bottom: auto; top: calc(var(--margen) + env(safe-area-inset-top, 0px)); max-height: 55vh; z-index: 2; }
-    #juego:has(#ficha:not([hidden])) #titulo, #juego:has(#tropas:not([hidden])) #titulo { visibility: hidden; }
+    #juego:has(#ficha:not([hidden])) #barra, #juego:has(#tropas:not([hidden])) #barra { visibility: hidden; }
     #tropas { bottom: auto; top: calc(var(--margen) + env(safe-area-inset-top, 0px)); max-height: 55vh; z-index: 2; }
     #plan { top: 30vh; }
     #registro { display: none; }
@@ -418,23 +526,67 @@
     #ayuda-raton { display: block; }
     #ayuda-tactil { display: none; }
   }
+  @media (max-width: 1150px) and (min-width: 761px) {
+    .indicador .rotulo { font-size: 9.5px; }
+    .indicador { padding: 2px 6px; }
+  }
   @media (hover: none) { #cursor { display: none; } }
 </style>
 
 <div id="juego">
   <canvas id="mapa" aria-label="Mapa de Sudamérica"></canvas>
 
-  <header id="titulo" class="panel">
-    <div class="rotulo" id="escenario">Escenario</div>
-    <h1>Sudamérica 1978</h1>
-    <div><span class="pais-chip" id="pais-jugador">Argentina</span></div>
-    <div id="resumen"></div>
-    <p id="ayuda">
-      <span id="ayuda-raton"><kbd>Clic</kbd> en una ficha elige tropas · <kbd>Clic derecho</kbd> las mueve o ataca<br>
-      <kbd>Rueda</kbd> zoom · <kbd>WASD</kbd> mapa · <kbd>Espacio</kbd> pausa · <kbd>1</kbd>–<kbd>5</kbd> velocidad · <kbd>N</kbd> noche</span>
-      <span id="ayuda-tactil">Tocá una ficha para elegir tropas y usá los botones del panel para moverlas o atacar.</span>
-    </p>
+  <header id="barra" class="panel">
+    <button id="barra-pais" type="button" class="barra-pais" title="Ver tu país"><span class="pais-chip" id="pais-jugador">Argentina</span></button>
+    <div id="indicadores" class="indicadores"></div>
+    <div id="barra-guerra" class="barra-guerra" hidden></div>
+    <div class="vistas" role="group" aria-label="Vista del mapa">
+      <button type="button" data-vista="politica" aria-pressed="true">Política</button>
+      <button type="button" data-vista="suministro" aria-pressed="false">Suministro</button>
+    </div>
+    <button id="boton-ayuda" type="button" class="mini" aria-expanded="false" aria-controls="ayuda">Ayuda</button>
   </header>
+
+  <div id="ayuda" class="panel" hidden>
+    <div class="rotulo" id="escenario">Escenario</div>
+    <p id="ayuda-raton"><kbd>Clic</kbd> en una ficha elige tropas · <kbd>Mayús</kbd>+<kbd>clic</kbd> suma · <kbd>Clic derecho</kbd> las mueve o ataca<br>
+      <kbd>Doble clic</kbd> en una provincia abre su país · <kbd>Rueda</kbd> zoom · <kbd>WASD</kbd> mapa<br>
+      <kbd>Espacio</kbd> pausa · <kbd>1</kbd>–<kbd>5</kbd> velocidad · <kbd>N</kbd> noche · <kbd>V</kbd> vista de suministro · <kbd>Esc</kbd> cancelar</p>
+    <p id="ayuda-tactil">Tocá una ficha para elegir tropas y usá los botones del panel para moverlas o atacar. Tocá el nombre de un país en una ficha para ver sus datos.</p>
+  </div>
+
+  <aside id="pais" class="panel" hidden aria-labelledby="pais-titulo">
+    <div class="ficha-cabeza">
+      <div>
+        <div class="rotulo" id="pais-sub">País</div>
+        <h2><span id="pais-titulo"></span></h2>
+      </div>
+      <select id="pais-elegir" aria-label="Elegir país"></select>
+      <button id="pais-cerrar" class="cerrar" type="button" aria-label="Cerrar panel del país">×</button>
+    </div>
+    <div id="pais-pestanas" class="pestanas" role="tablist"></div>
+    <div id="pais-contenido" class="pais-contenido"></div>
+  </aside>
+
+  <aside id="paquete" class="panel" hidden aria-labelledby="paquete-titulo">
+    <div class="ficha-cabeza">
+      <div>
+        <div class="rotulo">Paquete de ataque</div>
+        <h2 id="paquete-titulo"></h2>
+      </div>
+      <button id="paquete-cerrar" class="cerrar" type="button" aria-label="Cancelar paquete">×</button>
+    </div>
+    <section><h3>1 · Blanco</h3><div id="paquete-blancos" class="posturas"></div></section>
+    <section><h3>2 · Composición</h3><ul id="paquete-escuadrones" class="lista-tropas"></ul></section>
+    <section><h3>3 · Horario y ruta</h3>
+      <div id="paquete-horarios" class="posturas horizontales"></div>
+      <label class="fila-check"><input id="paquete-bajo" type="checkbox"> <span><b>Volar bajo</b><small>Menos chances de que los radares los vean, pero los antiaéreos pegan más.</small></span></label>
+    </section>
+    <section><h3>Lo que se sabe</h3><div id="paquete-info"></div></section>
+    <div class="acciones fila pegado">
+      <button id="paquete-lanzar" type="button" class="boton principal">Lanzar el paquete</button>
+    </div>
+  </aside>
 
   <section id="reloj" class="panel en-pausa" aria-label="Fecha y velocidad">
     <div>
@@ -514,6 +666,10 @@
         <label><input id="plan-art-preparacion" type="checkbox"> Artillería en la preparación</label>
         <label><input id="plan-art-ruptura" type="checkbox"> Artillería en la ruptura</label>
       </div>
+    </section>
+    <section>
+      <h3>6 · Aviación</h3>
+      <div id="plan-aviacion" class="aviacion-plan"></div>
     </section>
     <section class="calidad">
       <h3>Calidad del plan <b id="plan-calidad"></b></h3>

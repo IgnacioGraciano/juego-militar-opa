@@ -17,9 +17,9 @@ Orden de construcción del guion. Cada paso termina con algo que se puede probar
 | 2 | Tiempo: pausa y velocidades | Hecho (con día y noche; el clima queda pendiente) |
 | 3 | Brigadas: crear, mover, mostrar en el mapa | Hecho (4 tipos, cuerpos con general, mano de obra) |
 | 4 | Combate y Operaciones básicas | Hecho (plan, calidad, 3 fases, predicción) |
-| 5 | Suministro | — |
-| 6 | Aviación | — |
-| 7 | Economía, sectores y contratos | — |
+| 5 | Suministro | Hecho (depósitos, zonas verde/amarilla/roja, rutas que se cortan, desgaste) |
+| 6 | Aviación | Hecho (escuadrones de 1978, alerta, combate aéreo, aviación en Operaciones, paquetes de ataque, pilotos, disponibilidad) |
+| 7 | Economía, sectores y contratos | Hecho (4 sectores, contratos estatales y extranjeros, embargos, impuestos y gasto militar, repuestos) |
 | 8 | Diseñador de equipamiento | — |
 | 9 | Marina básica | — |
 | 10 | Política, diplomacia y árbol de Argentina | — |
@@ -55,6 +55,9 @@ y abrir <http://localhost:8000>.
 | Mover tropas | Clic derecho en el destino | Botón Mover y tocar el destino |
 | Atacar ya (plantilla rápida) | Clic derecho en una provincia enemiga con tropas | Botón Atacar… |
 | Planear una operación | Botón Atacar… o ficha de la provincia enemiga | Igual |
+| Ver un país (economía, ejército, aviación) | Clic en el país de la barra o de una ficha, o doble clic en una provincia | Tocar el nombre del país |
+| Vista de suministro | V o botón Suministro | Botón Suministro |
+| Ataque aéreo | Ficha de una provincia enemiga, o pestaña Aviación del país | Igual |
 | Cancelar | Esc | × |
 
 ## Ejércitos y combate
@@ -75,8 +78,30 @@ y abrir <http://localhost:8000>.
   y se ajustan probando.
 - **Guerra:** para probar, la ficha de una provincia extranjera tiene el botón
   "Declarar la guerra". La justificación llega con la diplomacia (paso 10).
-- **Pendiente para pasos siguientes:** suministro (paso 5), aviación (paso 6),
-  clima, IA que ataque (paso 11). El enemigo hoy solo defiende y trae reservas.
+- **Pendiente para pasos siguientes:** marina (paso 9), clima, IA que ataque
+  (paso 11). El enemigo hoy solo defiende, intercepta con sus cazas y trae reservas.
+
+## Suministro, aviación y economía
+
+- **Suministro** (`data/reglas/suministro.json`): sale de la capital y llega a
+  cada depósito por provincias propias, mucho más barato por tren (red de tren
+  de Natural Earth). Cada depósito cubre 300 km en verde y 600 en amarillo.
+  Hasta 6 depósitos, en provincias con tren o puerto, 5 días para armarlos.
+  Fuera de la zona verde, en guerra, las tropas se desgastan. Tomar o bombardear
+  una provincia de la ruta la corta.
+- **Aviación** (`data/aviones.json`, `data/reglas/aviacion.json`): modelos de la
+  época con datos reales aproximados; el poder aire-aire y de ataque sale de una
+  fórmula igual para todos. Escuadrones de 1978 por país (aproximados, a
+  verificar). En alerta interceptan; en las Operaciones bombardean, dan apoyo
+  cercano y persiguen; los paquetes de ataque pegan a bases, rutas, tropas o
+  depósitos, de día, al amanecer o de noche, y se pueden mandar volando bajo.
+  Pilotos con experiencia; derribados sobre territorio enemigo quedan presos.
+  La disponibilidad diaria depende del mantenimiento y de los repuestos.
+- **Economía** (`data/reglas/economia.json`, datos en el escenario): PBI de 1978
+  aproximado, impuestos y gasto militar (fondos militares), 4 sectores, equipo
+  para brigadas, repuestos, contratos estatales o compras en el exterior (en
+  divisas, con embargos: el de Estados Unidos a Chile de 1976 y a Argentina de
+  octubre de 1978). Cada brigada nueva usa equipo además de mano de obra.
 
 Para regenerar los datos históricos:
 

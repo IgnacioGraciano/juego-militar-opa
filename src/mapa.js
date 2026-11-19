@@ -4,6 +4,11 @@
 
 import { datos } from './datos.js';
 import { geo } from './geo.js';
+import { suministroEn, zona } from './suministro.js';
+import { enGuerra } from './ejercito.js';
+
+// Colores de las zonas de suministro (vista de suministro)
+const COLOR_ZONA = { verde: 'rgba(90, 190, 80, 0.5)', amarillo: 'rgba(225, 195, 60, 0.5)', rojo: 'rgba(215, 70, 50, 0.5)' };
 
 const COLOR_LAGO = 'rgb(77, 120, 158)';
 const COLOR_COSTA = 'rgba(20, 31, 43, 0.55)';
@@ -30,6 +35,9 @@ export class Mapa {
     this.seleccionada = -1;
     this.bajoCursor = -1;
     this.nocheActiva = true;
+    this.vista = 'politica'; // 'politica' | 'suministro'
+    this.jugador = '';
+    this._trenes = null;
     this._caminosPais = new Map(); // etiqueta -> Path2D con todas sus provincias
     this._fronterasPais = null;
     this._fronterasProvincia = null;
@@ -92,12 +100,34 @@ export class Mapa {
     ctx.fillStyle = COLOR_LAGO;
     for (const lago of datos.lagos) ctx.fill(lago.path, 'evenodd');
 
-    // Color de cada país
-    const opacidad = lerp(OPACIDAD_LEJOS, OPACIDAD_CERCA, detalle);
-    for (const [etiqueta, camino] of this._caminosPais) {
-      const rgb = datos.paises[etiqueta]?.rgb ?? [128, 128, 128];
-      ctx.fillStyle = `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${opacidad})`;
-      ctx.fill(camino, 'evenodd');
+    if (this.vista === 'suministro') {
+      // Zonas de suministro del jugador; el resto, apagado.
+      datos.provincias.forEach((p, i) => {
+        const propia = datos.duenos[i] === this.jugador;
+        const v = suministroEn(this.jugador, i);
+        const frente = !propia && v > 0 && enGuerra(this.jugador, datos.duenos[i]);
+        ctx.fillStyle = propia || frente ? COLOR_ZONA[zona(v)] : 'rgba(20, 24, 30, 0.45)';
+        if (frente) ctx.globalAlpha = 0.6;
+        ctx.fill(p.path, 'evenodd');
+        ctx.globalAlpha = 1;
+      });
+      if (!this._trenes) {
+        this._trenes = new Path2D();
+        for (const t of datos.trenes) this._trenes.addPath(t);
+      }
+      ctx.strokeStyle = 'rgba(40, 30, 25, 0.75)';
+      ctx.lineWidth = 1.3 * px;
+      ctx.setLineDash([4 * px, 2 * px]);
+      ctx.stroke(this._trenes);
+      ctx.setLineDash([]);
+    } else {
+      // Color de cada país
+      const opacidad = lerp(OPACIDAD_LEJOS, OPACIDAD_CERCA, detalle);
+      for (const [etiqueta, camino] of this._caminosPais) {
+        const rgb = datos.paises[etiqueta]?.rgb ?? [128, 128, 128];
+        ctx.fillStyle = `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${opacidad})`;
+        ctx.fill(camino, 'evenodd');
+      }
     }
 
     // Provincia bajo el cursor y provincia elegida

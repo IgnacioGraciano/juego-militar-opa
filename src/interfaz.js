@@ -15,37 +15,18 @@ import {
   operaciones, operacionesActivas, ejesPosibles, brigadasDisponibles, calcularCalidad, predecir,
   reconocida, anchoFrente, POSTURAS, FASES,
 } from './operaciones.js';
+import { $, h, miles, dec, pct, chipPais, iconoUnidad } from './dom.js';
+import { suministroEn, zona, NOMBRE_ZONA, provinciaApta, depositosDe, describirDeposito, capitalDe } from './suministro.js';
+import { escuadronesDe, disponibles as avionesListos, enAlcance, modelo, blancosEn } from './aviacion.js';
+import { actualizarBarra } from './panel_pais.js';
 
-const $ = (id) => document.getElementById(id);
-const miles = (n) => Math.round(n).toLocaleString('es-AR');
-const dec = (n, d = 2) => n.toLocaleString('es-AR', { minimumFractionDigits: d, maximumFractionDigits: d });
 const TERRENO = { llanura: 'Llanura', ciudad: 'Ciudad', selva: 'Selva', 'montaña': 'Montaña' };
-
-// Crea un elemento: h('div', {class: 'x', onclick}, 'texto', otroElemento)
-function h(tag, props = {}, ...hijos) {
-  const el = document.createElement(tag);
-  for (const [k, v] of Object.entries(props)) {
-    if (v == null || v === false) continue;
-    if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
-    else if (k === 'class') el.className = v;
-    else if (k === 'style') el.style.cssText = v;
-    else if (v === true) el.setAttribute(k, '');
-    else el.setAttribute(k, v);
-  }
-  for (const c of hijos.flat()) if (c != null && c !== false) el.append(c.nodeType ? c : String(c));
-  return el;
-}
-
-const chipPais = (pais) => h('span', { class: 'pais-chip', style: `--pais:${datos.paises[pais]?.color ?? '#888'}` }, nombrePais(pais));
 
 let acc = {}; // acciones de principal.js
 
 export function iniciarInterfaz(acciones) {
   acc = acciones;
   $('escenario').textContent = datos.escenario.nombre;
-  const jugador = datos.escenario.pais_jugador;
-  $('pais-jugador').textContent = nombrePais(jugador);
-  $('pais-jugador').style.setProperty('--pais', datos.paises[jugador]?.color ?? '#888');
 
   const barras = $('barras');
   SEGUNDOS_POR_DIA.forEach((seg, i) => {
@@ -82,16 +63,7 @@ export function actualizarReloj() {
 
 export function actualizarResumen() {
   const jugador = datos.escenario.pais_jugador;
-  const brigadas = ejercito.brigadas.filter((b) => b.pais === jugador);
-  const enemigos = enemigosDe(jugador);
-  const r = $('resumen');
-  r.replaceChildren(...[
-    h('div', {}, h('span', { class: 'rotulo' }, 'Mano de obra '), h('b', {}, miles(ejercito.manoDeObra[jugador] ?? 0)),
-      h('span', { class: 'tenue' }, ` · ${leyDe(jugador).nombre.toLowerCase()}`)),
-    h('div', {}, h('span', { class: 'rotulo' }, 'Ejército '), h('b', {}, `${brigadas.length} brigadas`),
-      h('span', { class: 'tenue' }, ` · ${miles(brigadas.reduce((s, b) => s + b.efectivos, 0))} hombres`)),
-    enemigos.length ? h('div', { class: 'guerra' }, h('span', { class: 'rotulo' }, 'En guerra con '), ...enemigos.map(chipPais)) : null,
-  ].filter(Boolean));
+  actualizarBarra();
   const ops = operacionesActivas(jugador);
   const lista = $('lista-operaciones');
   lista.hidden = !ops.length;
@@ -137,6 +109,12 @@ export function mostrarProvincia(i) {
     ['Costa', p.costera ? 'Sí' : 'No'],
   ];
   if (dueno !== p.pais) filas.unshift(['Ocupada', `Era de ${nombrePais(p.pais)}`]);
+  const suministroAca = suministroEn(jugador, i);
+  if (propia || suministroAca > 0) filas.push(['Tu suministro', `${NOMBRE_ZONA[zona(suministroAca)]} (${pct(suministroAca)})`]);
+  if (p.tren) filas.push(['Tren', 'Sí']);
+  const deposito = depositosDe(jugador).find((d) => d.provincia === i);
+  if (deposito) filas.push(['Depósito', describirDeposito(deposito)]);
+  else if (capitalDe(jugador) === i) filas.push(['Depósito', 'Central (capital)']);
 
   // Tropas en la provincia
   const aqui = ejercito.brigadas.filter((b) => b.provincia === i);
@@ -151,6 +129,15 @@ export function mostrarProvincia(i) {
   } else if (!propias.length) filas.push(['Tropas', 'Ninguna']);
 
   const acciones = [];
+  if (propia && !deposito && capitalDe(jugador) !== i) {
+    const error = provinciaApta(jugador, i);
+    acciones.push(h('button', { type: 'button', class: 'boton', disabled: !!error, title: error ?? '', onclick: () => acc.construirDeposito(i) },
+      h('b', {}, 'Armar un depósito'), h('small', {}, error ?? `${datos.reglas.suministro.dias_construccion} días`)));
+  }
+  if (!propia && enGuerra(jugador, dueno) && escuadronesDe(jugador).some((e) => enAlcance(e, i))) {
+    acciones.push(h('button', { type: 'button', class: 'boton', onclick: () => acc.paqueteSobre(i) },
+      h('b', {}, 'Ataque aéreo…'), h('small', {}, blancosEn(jugador, i).length ? 'Base, rutas, tropas o depósito' : 'Rutas')));
+  }
   if (propia && p.pais === jugador) {
     const mano = ejercito.manoDeObra[jugador] ?? 0;
     acciones.push(h('div', { class: 'rotulo' }, `Reclutar · mano de obra ${miles(mano)}`));
@@ -160,7 +147,7 @@ export function mostrarProvincia(i) {
       return h('button', {
         type: 'button', class: 'boton', disabled: !!error, title: error ?? `Entrenamiento ${Math.round(c.entrenamiento * 100)} %`,
         onclick: () => acc.reclutar(clave, i),
-      }, h('b', {}, t.nombre), h('small', {}, `${miles(c.efectivos)} h · ${c.dias} d`));
+      }, h('span', { class: 'reclutar-tipo' }, iconoUnidad(clave, jugador), h('b', {}, t.nombre)), h('small', {}, `${miles(c.efectivos)} h · ${c.equipo} equipo · ${c.dias} d`));
     })));
   } else if (!propia && !enGuerra(jugador, dueno)) {
     acciones.push(h('button', { type: 'button', class: 'boton peligro', onclick: () => acc.declararGuerra(dueno) },
@@ -177,15 +164,13 @@ export function mostrarProvincia(i) {
   }
 
   $('ficha-nombre').textContent = p.nombre;
-  $('ficha-pais').replaceWith(Object.assign(chipPais(dueno), { id: 'ficha-pais' }));
+  $('ficha-pais').replaceWith(Object.assign(chipPais(dueno, () => acc.abrirPais(dueno)), { id: 'ficha-pais' }));
   $('ficha-datos').replaceChildren(...filas.flatMap(([k, v]) => [h('dt', {}, k), h('dd', {}, v)]));
   $('ficha-acciones').replaceChildren(...acciones);
   ficha.hidden = false;
 }
 
 // ------------------------------------------------------------------ tropas elegidas
-
-const SIMBOLO = { infanteria: '⨯', montana: '⨯▴', mecanizada: '⨯◯', blindada: '◯' };
 
 function estadoBrigada(b) {
   if (b.formacion) return `En formación: ${Math.ceil(b.formacion.horas / 24)} días`;
@@ -205,11 +190,11 @@ export function mostrarTropas(ids) {
   const cuerpos = [...new Set(lista.map((b) => b.cuerpo))].map(cuerpoPorId).filter(Boolean);
   $('tropas-titulo').textContent = lista.length === 1 ? lista[0].nombre : `${lista.length} brigadas`;
   $('tropas-lista').replaceChildren(...lista.map((b) => h('li', {},
-    h('span', { class: 'simbolo', title: tipos()[b.tipo].nombre }, SIMBOLO[b.tipo]),
+    iconoUnidad(b.tipo, b.pais, tipos()[b.tipo].nombre),
     h('div', { class: 'tropa' },
       h('div', { class: 'tropa-nombre' }, b.nombre),
       h('div', { class: 'tropa-datos' }, `${miles(b.efectivos)} h · entrenamiento ${Math.round(b.entrenamiento * 100)} % · ${datos.provincias[b.provincia].nombre}`),
-      h('div', { class: 'tropa-datos' }, estadoBrigada(b)),
+      h('div', { class: 'tropa-datos' }, `${estadoBrigada(b)} · suministro ${NOMBRE_ZONA[zona(suministroEn(b.pais, b.provincia))].toLowerCase()}`),
       h('div', { class: 'barra-org', title: `Organización ${Math.round(b.organizacion * 100)} %` }, h('i', { style: `width:${Math.round(b.organizacion * 100)}%` }))),
     lista.length > 1 ? h('button', { type: 'button', class: 'quitar', title: 'Sacar de la selección', 'aria-label': 'Sacar de la selección', onclick: () => acc.quitarDeSeleccion(b.id) }, '×') : null,
   )));
@@ -271,7 +256,7 @@ export function renderPlan() {
       if (e.target.value === 'reserva') plan.reservas.push(b.id);
       cambioPlan();
     } }, h('option', { value: 'no', selected: rol === 'no' }, 'No va'), h('option', { value: 'ataca', selected: rol === 'ataca' }, 'Ataca'), h('option', { value: 'reserva', selected: rol === 'reserva' }, 'Reserva'));
-    return h('li', { class: rol }, h('span', { class: 'simbolo' }, SIMBOLO[b.tipo]),
+    return h('li', { class: rol }, iconoUnidad(b.tipo, b.pais),
       h('div', { class: 'tropa' }, h('div', { class: 'tropa-nombre' }, b.nombre),
         h('div', { class: 'tropa-datos' }, `${miles(b.efectivos)} h · org. ${Math.round(b.organizacion * 100)} % · ${horas === 0 ? 'en el frente' : `llega en ${dec(horas / 24, 1)} d`}`)),
       sel);
@@ -292,6 +277,24 @@ export function renderPlan() {
     c.checked = plan.artilleria[fase];
     c.onchange = () => { plan.artilleria[fase] = c.checked; cambioPlan(false); };
   }
+
+  // Aviación: escuadrones propios libres que llegan al objetivo
+  plan.aviacion ??= [];
+  plan.aviacionFases ??= { preparacion: true, ruptura: true, explotacion: true };
+  const enAlcanceYa = escuadronesDe(jugador).filter((e) => !e.ocupado && enAlcance(e, objetivo));
+  $('plan-aviacion').replaceChildren(
+    ...(enAlcanceYa.length ? enAlcanceYa.map((e) => h('label', { class: 'fila-check' },
+      h('input', { type: 'checkbox', checked: plan.aviacion.includes(e.id), onchange: (ev) => {
+        plan.aviacion = plan.aviacion.filter((id) => id !== e.id);
+        if (ev.target.checked) plan.aviacion.push(e.id);
+        cambioPlan(false);
+      } }),
+      iconoUnidad('avion', e.pais),
+      h('span', {}, h('b', {}, e.nombre), h('small', {}, `${avionesListos(e)} listos · ${modelo(e.modelo).rol === 'caza' ? 'superioridad aérea' : 'ataque a tierra'}`))))
+      : [h('p', { class: 'nota' }, 'Ningún escuadrón libre llega a este objetivo.')]),
+    h('div', { class: 'artilleria' }, ...[['preparacion', 'Bombardeo en la preparación'], ['ruptura', 'Apoyo cercano en la ruptura'], ['explotacion', 'Persecución en la explotación']]
+      .map(([fase, texto]) => h('label', {}, h('input', { type: 'checkbox', checked: plan.aviacionFases[fase], onchange: (ev) => { plan.aviacionFases[fase] = ev.target.checked; cambioPlan(false); } }), ` ${texto}`))),
+  );
   actualizarPrediccion();
 }
 
@@ -319,6 +322,7 @@ function actualizarPrediccion() {
       h('ul', { class: 'probabilidades' }, ...res.map((r) => h('li', { class: r.clave },
         h('span', {}, r.nombre), h('span', { class: 'medidor' }, h('i', { style: `width:${Math.round(pr.probabilidades[r.clave] * 100)}%` })),
         h('small', {}, `${Math.round(pr.probabilidades[r.clave] * 100)} %`)))),
+      pr.superioridad != null ? h('p', { class: 'nota' }, `Superioridad aérea estimada: ${pct(pr.superioridad)}${pr.superioridad >= 0.7 ? ' (dominás el aire)' : pr.superioridad < 0.3 ? ' (el enemigo domina el aire)' : ''}.`) : null,
       h('p', { class: 'nota' }, `Ventaja esperada ${dec(pr.ventajaMedia)} (raíz del poder de ataque sobre el de defensa, por el azar). `,
         pr.visto ? `Enemigo confirmado: ${pr.defensores} brigada(s).` : 'Fuerza enemiga estimada: sin reconocer, puede haber más o menos tropas.'),
       h('div', { class: 'multiplicadores' },
@@ -337,10 +341,11 @@ export function mostrarDecision(op) {
   const res = datos.reglas.combate.resultados.find((r) => r.clave === d.resultado);
   const titulo = d.resultado === 'preparacion' ? 'Terminó la preparación' : `${FASES[d.fase]}: ${res?.nombre ?? ''}`;
   const filas = [];
-  if (d.ventaja != null) filas.push(['Ventaja media', dec(d.ventaja)]);
+  if (d.ventaja != null && d.ventaja > 0) filas.push(['Ventaja media', dec(d.ventaja)]);
   if (d.defensores != null) filas.push(['Defensores en la provincia', `${d.defensores} brigada(s)`]);
   filas.push(['Tus bajas', miles(d.bajasPropias)], ['Bajas enemigas', miles(d.bajasEnemigas)]);
   if (d.reacciones) filas.push(['Reacción enemiga', `trae ${d.reacciones} brigada(s) de refuerzo`]);
+  if (d.aire) filas.push(['Aviación', d.aire]);
   const hayReservas = op.reservas.length > 0;
   const botones = [];
   const cerrar = (eleccion) => { caja.hidden = true; if (eleccion) acc.decidir(op, eleccion); };

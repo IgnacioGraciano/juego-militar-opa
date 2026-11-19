@@ -2,12 +2,17 @@
 // Operaciones, en coordenadas de pantalla. También resuelve los clics sobre las fichas.
 
 import { datos } from './datos.js';
+import { geo, aLonLat } from './geo.js';
 import { ejercito, avanceTramo, enGuerra } from './ejercito.js';
 import { operaciones } from './operaciones.js';
 import { FUENTE_ETIQUETAS } from './etiquetas.js';
+import { dibujarPictograma } from './simbolos.js';
+import { aviacion } from './aviacion.js';
+import { suministro } from './suministro.js';
+import { tiempo } from './tiempo.js';
 
-const ANCHO = 30;
-const ALTO = 20;
+const ANCHO = 34;
+const ALTO = 22;
 const ORDEN_TIPOS = ['blindada', 'mecanizada', 'montana', 'infanteria'];
 const BRONCE = 'rgb(226, 196, 120)';
 
@@ -24,7 +29,8 @@ export function fichaEn(x, y) {
 function colorPais(pais, oscurecer = 0.25) {
   const [r, g, b] = datos.paises[pais]?.rgb ?? [128, 128, 128];
   const k = 1 - oscurecer;
-  return `rgb(${Math.round(r * k)}, ${Math.round(g * k)}, ${Math.round(b * k)})`;
+  const c = (v) => Math.min(255, Math.round(v * k));
+  return `rgb(${c(r)}, ${c(g)}, ${c(b)})`;
 }
 
 const centroPantalla = (camara, prov) => {
@@ -36,6 +42,12 @@ export function dibujarUnidades(ctx, camara, vista) {
   fichas = [];
   const { jugador, seleccion, plan, rutaVista } = vista;
   ctx.save();
+
+  if (vista.vista === 'suministro') dibujarRutasSuministro(ctx, camara, jugador);
+  dibujarDepositos(ctx, camara, jugador, vista.vista === 'suministro');
+  dibujarBasesAereas(ctx, camara, jugador);
+  if (vista.alcance) dibujarAlcance(ctx, camara, vista.alcance);
+  dibujarVuelos(ctx, camara, jugador);
 
   // Flechas de las Operaciones en curso
   for (const op of operaciones.lista) {
@@ -139,7 +151,7 @@ function dibujarFicha(ctx, centro, lista, seleccion) {
   ctx.lineWidth = elegida ? 2.5 : 1;
   ctx.strokeStyle = elegida ? BRONCE : 'rgba(10, 10, 10, 0.9)';
   ctx.strokeRect(x + 0.5, y + 0.5, ANCHO - 1, ALTO - 1);
-  simbolo(ctx, x + 6, y + 4, ANCHO - 12, ALTO - 8, tipo);
+  dibujarPictograma(ctx, tipo, x + 3, y + 2, ANCHO - 6, ALTO - 4);
 
   // Organización promedio
   const org = lista.reduce((s, b) => s + b.organizacion, 0) / lista.length;
@@ -163,35 +175,6 @@ function dibujarFicha(ctx, centro, lista, seleccion) {
     ctx.textAlign = 'left';
   }
   ctx.globalAlpha = 1;
-}
-
-// Símbolos militares (estilo OTAN): infantería = X, blindada = óvalo,
-// mecanizada = X con óvalo, montaña = X con triángulo.
-function simbolo(ctx, x, y, w, h, tipo) {
-  ctx.strokeStyle = '#fff';
-  ctx.fillStyle = '#fff';
-  ctx.lineWidth = 1.4;
-  ctx.strokeRect(x, y, w, h);
-  ctx.beginPath();
-  if (tipo !== 'blindada') {
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + w, y + h);
-    ctx.moveTo(x + w, y);
-    ctx.lineTo(x, y + h);
-  }
-  if (tipo === 'blindada' || tipo === 'mecanizada') {
-    ctx.moveTo(x + w * 0.85, y + h / 2);
-    ctx.ellipse(x + w / 2, y + h / 2, w * 0.35, h * 0.3, 0, 0, Math.PI * 2);
-  }
-  ctx.stroke();
-  if (tipo === 'montana') {
-    ctx.beginPath();
-    ctx.moveTo(x + w / 2 - 3.5, y + h);
-    ctx.lineTo(x + w / 2, y + h - 4.5);
-    ctx.lineTo(x + w / 2 + 3.5, y + h);
-    ctx.closePath();
-    ctx.fill();
-  }
 }
 
 function linea(ctx, puntos, color, discontinua, punta) {
@@ -272,4 +255,125 @@ function marcaObjetivo(ctx, p, n) {
   ctx.fillStyle = BRONCE;
   ctx.fillText(String(n), p.x, p.y + 4.5);
   ctx.textAlign = 'left';
+}
+
+// ------------------------------------------------------------------ suministro
+
+function dibujarRutasSuministro(ctx, camara, jugador) {
+  const central = suministro.centrales[jugador];
+  for (const d of suministro.depositos) {
+    if (d.pais !== jugador || !d.ruta.length) continue;
+    const puntos = d.ruta.map((p) => centroPantalla(camara, p));
+    linea(ctx, puntos, 'rgba(120, 210, 110, 0.9)', false, false);
+  }
+  for (const d of suministro.depositos) {
+    if (d.pais !== jugador || d.conectado || d.horas > 0 || central < 0) continue;
+    linea(ctx, [centroPantalla(camara, central), centroPantalla(camara, d.provincia)], 'rgba(230, 80, 60, 0.9)', true, false);
+  }
+}
+
+// Depósitos propios: verde si llega el suministro, amarillo en obra, rojo cortado.
+function dibujarDepositos(ctx, camara, jugador, destacar) {
+  if (!destacar && camara.zoom < 0.9) return;
+  const dibujar = (prov, estado, esCentral) => {
+    const c = centroPantalla(camara, prov);
+    const x = c.x - 9;
+    const y = c.y + 8;
+    const color = estado === 'ok' ? 'rgb(150, 220, 120)' : estado === 'obra' ? 'rgb(230, 200, 110)' : 'rgb(235, 100, 80)';
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    ctx.fillRect(x - 2, y - 1, 22, 16);
+    dibujarPictograma(ctx, 'deposito', x, y, 18, 13, color, null);
+    if (esCentral) {
+      ctx.strokeStyle = BRONCE;
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(x - 2.5, y - 1.5, 23, 17);
+    }
+  };
+  const central = suministro.centrales[jugador];
+  if (central >= 0) dibujar(central, 'ok', true);
+  for (const d of suministro.depositos) {
+    if (d.pais !== jugador) continue;
+    dibujar(d.provincia, d.horas > 0 ? 'obra' : d.conectado && !d.fueraDeServicio ? 'ok' : 'cortado', false);
+  }
+}
+
+// ------------------------------------------------------------------ aviación
+
+function dibujarBasesAereas(ctx, camara, jugador) {
+  const porBase = new Map();
+  for (const e of aviacion.escuadrones) {
+    if (e.pais !== jugador && camara.zoom < 1.2) continue;
+    if (!porBase.has(e.base)) porBase.set(e.base, []);
+    porBase.get(e.base).push(e);
+  }
+  for (const [base, lista] of porBase) {
+    const b = datos.bases[base];
+    const p = camara.mundoAPantalla(b.x, b.y);
+    const aviones = lista.reduce((s, e) => s + e.aviones, 0);
+    const x = Math.round(p.x + 8);
+    const y = Math.round(p.y - 22);
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(x + 1, y + 2, 40, 18);
+    ctx.fillStyle = colorPais(lista[0].pais, 0.35);
+    ctx.fillRect(x, y, 40, 18);
+    ctx.strokeStyle = 'rgba(10,10,10,0.9)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 0.5, y + 0.5, 39, 17);
+    dibujarPictograma(ctx, 'avion', x + 2, y + 2, 18, 14);
+    ctx.font = `600 12px ${FUENTE_ETIQUETAS}`;
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'left';
+    ctx.fillText(String(aviones), x + 21, y + 13.5);
+    fichas.push({ x, y, w: 40, h: 18, ids: [], escuadrones: lista.map((e) => e.id), pais: lista[0].pais, base });
+  }
+}
+
+// Círculo de alcance (en km) alrededor de un punto del mapa.
+function dibujarAlcance(ctx, camara, { x, y, km }) {
+  const lat = (aLonLat(x, y).lat * Math.PI) / 180;
+  const rx = ((km * geo.escala) / (111.32 * Math.cos(lat))) * camara.zoom;
+  const ry = ((km * geo.escala) / (111.32 * Math.cos(0.8 * lat))) * camara.zoom;
+  const c = camara.mundoAPantalla(x, y);
+  ctx.beginPath();
+  ctx.ellipse(c.x, c.y, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(226, 196, 120, 0.08)';
+  ctx.fill();
+  ctx.setLineDash([6, 5]);
+  ctx.strokeStyle = 'rgba(226, 196, 120, 0.85)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function dibujarVuelos(ctx, camara, jugador) {
+  for (const v of aviacion.vuelos) {
+    if (v.pais !== jugador) continue;
+    const destino = centroPantalla(camara, v.plan.objetivo);
+    const ahora = tiempo.horas + tiempo.fraccion;
+    for (const [k, g] of v.grupos.entries()) {
+      const b = datos.bases[g.e.base];
+      const origen = camara.mundoAPantalla(b.x, b.y);
+      let t = 0;
+      if (v.estado === 'ida') t = (ahora - v.salida) / Math.max(1, v.llegada - v.salida);
+      else if (v.estado === 'vuelta') t = 1 - (ahora - v.llegada) / Math.max(1, v.regreso - v.llegada);
+      t = Math.max(0, Math.min(1, t));
+      if (k === 0) linea(ctx, [origen, destino], 'rgba(255, 245, 210, 0.6)', true, v.estado !== 'vuelta');
+      if (v.estado === 'esperando') continue;
+      const pos = { x: origen.x + (destino.x - origen.x) * t, y: origen.y + (destino.y - origen.y) * t + k * 6 };
+      const ang = Math.atan2(destino.y - origen.y, destino.x - origen.x) + (v.estado === 'vuelta' ? Math.PI : 0) + Math.PI / 2;
+      ctx.save();
+      ctx.translate(pos.x, pos.y);
+      ctx.rotate(ang);
+      dibujarPictograma(ctx, 'avion', -10, -7, 20, 14, colorPais(g.e.pais, -0.3));
+      ctx.restore();
+    }
+    // Estallido sobre el blanco en la hora del ataque
+    if (v.estado === 'vuelta' && ahora - v.llegada < 2) {
+      ctx.beginPath();
+      ctx.arc(destino.x, destino.y, 10 + (ahora - v.llegada) * 10, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255, 150, 60, 0.9)';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+  }
 }

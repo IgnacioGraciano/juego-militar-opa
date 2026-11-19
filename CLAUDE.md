@@ -27,3 +27,7 @@
   estimar con años anteriores; sin ningún dato, por tamaño y poder militar del país.
 - Todo número de reglas (combate, movimiento, reclutamiento) va en `data/reglas/*.json`,
   no en el código.
+- Módulos: `ejercito.js` (brigadas), `operaciones.js` (combate), `suministro.js`, `aviacion.js`,
+  `economia.js`; interfaz en `interfaz.js` (ficha, tropas, plan), `panel_pais.js` (barra y panel
+  de país con pestañas), `panel_aereo.js` (paquetes de ataque), `dom.js` (ayudas), `simbolos.js`
+  (pictogramas de unidades, mismo dibujo en Canvas y SVG).

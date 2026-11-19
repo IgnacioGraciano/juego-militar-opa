@@ -8,6 +8,9 @@
 import { datos, nombrePais } from './datos.js';
 import { aLonLat } from './geo.js';
 import { posicionSolEn, msUtc, tiempo } from './tiempo.js';
+import { suministroEn, zona } from './suministro.js';
+import { aireEnFase, estimarAire, bombardeoAereo, escuadronPorId, escuadronesDe, disponibles as avionesListos, enAlcance } from './aviacion.js';
+import { sumarBajas } from './economia.js';
 import {
   ejercito, tipos, enGuerra, enemigosEn, brigadaPorId, cuerpoPorId, generalDe, calcularRuta,
   ocupar, retirar, eliminarBrigada, ganarExperiencia, mensaje, avisar,
@@ -69,6 +72,9 @@ export function planInicial(pais, objetivo, preferidas = []) {
     diasPreparacion: 3,
     artilleria: { preparacion: true, ruptura: true, explotacion: false },
     rapida: false,
+    // Aviación: escuadrones propios libres que llegan al objetivo.
+    aviacion: escuadronesDe(pais).filter((e) => !e.ocupado && avionesListos(e) > 0 && enAlcance(e, objetivo)).map((e) => e.id),
+    aviacionFases: { preparacion: true, ruptura: true, explotacion: true },
   };
 }
 
@@ -104,8 +110,8 @@ export function calcularCalidad(plan) {
       valor: f.concentracion * Math.min(1, fuerzas.length / anchoFrente(objetivo)),
       nota: `${fuerzas.length} de ${anchoFrente(objetivo)} lugares en el frente` },
     { clave: 'apoyo', nombre: 'Apoyo coordinado', max: f.apoyo,
-      valor: (plan.artilleria.preparacion ? f.apoyo / 2 : 0) + (plan.artilleria.ruptura ? f.apoyo / 2 : 0),
-      nota: 'Artillería por fase (la aviación llega en el paso 6)' },
+      valor: Math.min(f.apoyo, (plan.artilleria.preparacion ? f.apoyo / 3 : 0) + (plan.artilleria.ruptura ? f.apoyo / 3 : 0) + ((plan.aviacion ?? []).length ? f.apoyo / 3 : 0)),
+      nota: 'Artillería por fase' },
     { clave: 'reservas', nombre: 'Reservas listas', max: f.reservas,
       valor: reservas.length ? (reservas.some((b) => tipos()[b.tipo].movil) ? f.reservas : f.reservas * 0.6) : 0,
       nota: reservas.length ? `${reservas.length} en reserva` : 'Sin reservas' },
@@ -113,8 +119,8 @@ export function calcularCalidad(plan) {
       valor: (orgEnemiga < 0.8 ? f.momento / 2 : 0) + (defensores.length <= anchoFrente(objetivo) / 2 ? f.momento / 2 : 0),
       nota: orgEnemiga < 0.8 ? 'Enemigo desgastado' : 'Enemigo descansado (el clima llega más adelante)' },
     { clave: 'suministro', nombre: 'Suministro asegurado', max: f.suministro,
-      valor: plan.eje >= 0 && datos.provincias[plan.eje].pais === plan.pais ? f.suministro : f.suministro / 2,
-      nota: 'Se completa con el paso 5 (suministro)' },
+      valor: f.suministro * suministroEn(plan.pais, objetivo),
+      nota: `Zona ${{ verde: 'verde', amarillo: 'amarilla', rojo: 'roja' }[zona(suministroEn(plan.pais, objetivo))]} en el frente` },
     { clave: 'general', nombre: 'Experiencia del general', max: f.general,
       valor: (f.general * general) / 5, nota: `Nivel ${general}` },
   ];
@@ -160,21 +166,25 @@ export function multiplicadoresAtaque(op, atacantes, objetivo, ctx = {}) {
     ['Artillería', ctx.fase === 'ruptura' && op.artilleria.ruptura ? c.artilleria_ruptura : 1],
     ['Sorpresa', op.detectada ? 1 : c.sorpresa],
     ['Noche', ctx.noche ? c.noche_ataque : 1],
-    ['Suministro', ctx.suministro ?? 1],
+    ['Suministro', ctx.suministro ?? suministroEn(op.pais, objetivo)],
+    ['Apoyo aéreo', ctx.aire ?? op.aire?.multiplicador ?? 1],
   ];
   return lista;
 }
 
-export function multiplicadoresDefensa(op, defensores, objetivo) {
+export function multiplicadoresDefensa(op, defensores, objetivo, ctx = {}) {
   const c = C();
   const p = datos.provincias[objetivo];
   const cruzaRio = p.conexiones.some((x) => x.j === op.eje && x.rio);
   const propio = defensores.length && defensores.every((b) => p.pais === b.pais);
+  const pais = defensores[0]?.pais ?? op.enemigo ?? datos.duenos[objetivo];
   return [
     ['Terreno', c.terreno[p.terreno].defensa],
     ['Río', cruzaRio ? c.rio : 1],
     ['Defensa del propio suelo', propio ? c.defensa_propio_suelo : 1],
     ['Conocimiento del terreno', propio ? c.conocimiento_terreno : 1],
+    ['Suministro', suministroEn(pais, objetivo)],
+    ['Aviación enemiga', ctx.aireDefensa ?? op.aire?.multiplicadorDefensa ?? 1],
   ];
 }
 
@@ -200,7 +210,7 @@ function horaDeCombate(op, atacantes, defensores, objetivo, ctx) {
   if (!fA.length) return { fin: 'agotados' };
   if (!fD.length) return { fin: 'quebrados' };
   const pa = fA.reduce((s, x) => s + x.p, 0) * producto(multiplicadoresAtaque(op, fA.map((x) => x.b), objetivo, ctx));
-  const pd = fD.reduce((s, x) => s + x.p, 0) * producto(multiplicadoresDefensa(op, fD.map((x) => x.b), objetivo)) * (ctx.defensaExtra ?? 1);
+  const pd = fD.reduce((s, x) => s + x.p, 0) * producto(multiplicadoresDefensa(op, fD.map((x) => x.b), objetivo, ctx)) * (ctx.defensaExtra ?? 1);
   const azar = c.azar_min + (ctx.azar ?? Math.random)() * (c.azar_max - c.azar_min);
   const v = Math.sqrt(pa / pd) * azar;
   const post = c.posturas[op.postura];
@@ -245,6 +255,9 @@ export function predecir(plan, veces = 80) {
   // La ruptura empieza después de la preparación y del bombardeo: se mira si es de noche en cada hora.
   const inicio = msUtc() + (plan.diasPreparacion * 24 + C().fases.preparacion.horas) * 3600e3;
   const noche = Array.from({ length: horasRuptura }, (_, h) => esDeNoche(objetivo, inicio + h * 3600e3));
+  const aire = estimarAire(plan, objetivo, defensoresReales.length);
+  const usaAire = (fase) => (plan.aviacion ?? []).length && plan.aviacionFases?.[fase] !== false;
+  const ctxAire = { aire: usaAire('ruptura') ? aire.multiplicador : 1, aireDefensa: aire.multiplicadorDefensa };
   for (let k = 0; k < veces; k++) {
     // Las fuerzas que todavía no llegaron se suponen en el eje.
     const at = fuerzas.map((b) => ({ ...copiar(b), provincia: datos.provincias[objetivo].conexiones.some((c) => c.j === b.provincia && datos.duenos[c.j] === plan.pais) ? b.provincia : plan.eje, organizacion: b.organizacion }));
@@ -254,7 +267,7 @@ export function predecir(plan, veces = 80) {
     if (plan.artilleria.preparacion || plan.postura === 'desgaste') for (let h = 0; h < C().fases.preparacion.horas; h++) bombardeoHora(op, de);
     let suma = 0, horas = 0, fin = null;
     for (let h = 0; h < horasRuptura; h++) {
-      const r = horaDeCombate(op, at, de, objetivo, { fase: 'ruptura', noche: noche[h] });
+      const r = horaDeCombate(op, at, de, objetivo, { fase: 'ruptura', noche: noche[h], ...ctxAire });
       if (r.fin) { fin = r.fin; break; }
       if (primera === null) primera = { pa: r.pa, pd: r.pd };
       suma += r.ventaja;
@@ -277,8 +290,9 @@ export function predecir(plan, veces = 80) {
     calidad: op.calidad,
     ataque: primera?.pa ?? 0,
     defensa: primera?.pd ?? 0,
-    multAtaque: multiplicadoresAtaque(op, fuerzas, objetivo, { fase: 'ruptura' }),
-    multDefensa: multiplicadoresDefensa(op, defensoresReales, objetivo),
+    multAtaque: multiplicadoresAtaque(op, fuerzas, objetivo, { fase: 'ruptura', ...ctxAire }),
+    multDefensa: multiplicadoresDefensa(op, defensoresReales, objetivo, ctxAire),
+    superioridad: aire.superioridad,
     defensores: visto ? defensoresReales.length : null,
   };
 }
@@ -315,6 +329,8 @@ export function lanzarOperacion(plan) {
     decision: null,
   };
   op.calidad = calcularCalidad(op);
+  op.aviacion = (op.aviacion ?? []).filter((id) => escuadronPorId(id) && !escuadronPorId(id).ocupado);
+  for (const id of op.aviacion) escuadronPorId(id).ocupado = `op-${op.id}`;
   const adyacentes = new Set(ejesPosibles(plan.pais, objetivo));
   for (const b of [...fuerzasDe(op), ...reservasDe(op)]) {
     b.operacion = op.id;
@@ -331,6 +347,7 @@ export function lanzarOperacion(plan) {
 
 function terminar(op, texto, tono = 'info') {
   op.estado = 'terminada';
+  for (const e of (op.aviacion ?? []).map(escuadronPorId)) if (e && e.ocupado === `op-${op.id}`) e.ocupado = null;
   for (const b of [...fuerzasDe(op), ...reservasDe(op)]) {
     b.operacion = null;
     b.mov = null;
@@ -378,6 +395,10 @@ function iniciarFase(op, fase) {
     propias: new Map(fuerzasDe(op).map((b) => [b.id, b.efectivos])),
     enemigas: new Map(enemigosEn(op.pais, objetivoActual(op)).map((b) => [b.id, b.efectivos])),
   };
+  // La aviación asignada sale en esta fase (si se eligió para la fase); la enemiga en alerta, también.
+  const conAire = (op.aviacion ?? []).length && op.aviacionFases?.[fase] !== false;
+  op.aire = aireEnFase(conAire ? op : { ...op, aviacion: [] }, objetivoActual(op), enemigosEn(op.pais, objetivoActual(op)).length);
+  if (op.aire?.revela) op.reconocido = true;
 }
 
 
@@ -395,6 +416,9 @@ function cerrarFase(op, extra = {}) {
   const bajasEnemigas = perdidos(op.bajasFase.enemigas);
   op.bajas.propias += bajasPropias;
   op.bajas.enemigas += bajasEnemigas;
+  sumarBajas(op.pais, bajasPropias);
+  sumarBajas(op.enemigo, bajasEnemigas);
+  if (op.aire?.texto) extra = { ...extra, aire: op.aire.texto };
   return { fase: op.fase, provincia: datos.provincias[objetivo].nombre, bajasPropias: Math.round(bajasPropias), bajasEnemigas: Math.round(bajasEnemigas), ...extra };
 }
 
@@ -449,12 +473,13 @@ function horaDeFase(op) {
 
   if (op.fase === 'preparacion') {
     if (op.artilleria.preparacion || op.postura === 'desgaste') bombardeoHora(op, defensores);
+    if (op.aire && (op.aviacion ?? []).length && op.aviacionFases?.preparacion !== false) bombardeoAereo(op.aire, defensores);
     if (op.horasFase >= c.fases.preparacion.horas) {
       op.reconocido = true;
       pedirDecision(op, cerrarFase(op, {
         resultado: 'preparacion',
-        texto: op.artilleria.preparacion || op.postura === 'desgaste'
-          ? 'La artillería castigó las posiciones enemigas y bajó su organización y atrincheramiento.'
+        texto: op.artilleria.preparacion || op.postura === 'desgaste' || (op.aire && (op.aviacion ?? []).length)
+          ? 'El bombardeo castigó las posiciones enemigas y bajó su organización y atrincheramiento.'
           : 'Sin bombardeo previo: el enemigo sigue intacto.',
         defensores: defensores.length,
         siguiente: 'ruptura',
@@ -470,7 +495,7 @@ function horaDeFase(op) {
     const ctx = {
       fase: op.fase,
       noche: esDeNoche(objetivo),
-      suministro: op.suministro,
+      suministro: suministroEn(op.pais, objetivo),
       defensaExtra: op.fase === 'explotacion' ? c.fases.explotacion.organizacion_defensor_sorprendido : 1,
     };
     // Una provincia vacía se toma cuando las tropas llegan (medio día de marcha).
@@ -535,7 +560,6 @@ function aplicarResultado(op, res, media, fin) {
   const moviles = fuerzasDe(op).filter((b) => tipos()[b.tipo].movil).length + reservasDe(op).filter((b) => tipos()[b.tipo].movil).length;
   if (op.fase === 'explotacion') {
     op.avanceExplotacion++;
-    op.suministro *= c.fases.explotacion.suministro_por_provincia;
     const maximo = c.fases.explotacion.provincias_maximas + (C().posturas[op.postura].explotacion_extra && op.postura === 'blindado' ? 1 : 0);
     if (avanzo && quedanObjetivos && op.avanceExplotacion < maximo) {
       op.objetivoActual++;

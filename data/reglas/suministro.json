@@ -1,0 +1,27 @@
+{
+  "_comentario": "Suministro por depósitos y rutas (guion: Suministro). El suministro sale de la capital, llega a los depósitos por las provincias propias (más barato por tren) y cada depósito cubre un radio. Los valores se ajustan probando.",
+  "fuente": "Reglas del juego (elaboración propia)",
+
+  "radio_verde_km": 300,
+  "radio_amarillo_km": 600,
+  "radio_maximo_km": 1000,
+  "valor_verde": 1.0,
+  "valor_amarillo": 0.7,
+  "valor_rojo": 0.35,
+  "umbral_verde": 0.85,
+  "umbral_amarillo": 0.5,
+
+  "factor_tren": 0.35,
+  "factor_estrecho": 2.5,
+  "linea_larga_km": 1500,
+  "linea_maxima_km": 4000,
+
+  "depositos_maximos": 6,
+  "dias_construccion": 5,
+  "depositos_iniciales": 3,
+
+  "desgaste_rojo": { "efectivos_por_dia": 0.01, "moral_por_dia": 0.03, "organizacion_maxima": 0.5 },
+  "recuperacion_amarilla": 0.5,
+
+  "dano_rutas_recuperacion_por_dia": 0.08
+}

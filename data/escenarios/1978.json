@@ -7,36 +7,421 @@
   "zona_horaria": -3,
   "pais_jugador": "ARG",
   "duenos": {},
-
   "reclutamiento": {
-    "ARG": "servicio_militar", "CHL": "servicio_militar", "BRA": "servicio_militar",
-    "URY": "servicio_militar", "PRY": "servicio_militar", "BOL": "servicio_militar",
-    "PER": "servicio_militar", "ECU": "servicio_militar", "COL": "servicio_militar",
-    "VEN": "servicio_militar", "GUY": "voluntarios", "SUR": "voluntarios",
-    "GBR": "voluntarios", "FRA": "servicio_militar"
+    "ARG": "servicio_militar",
+    "CHL": "servicio_militar",
+    "BRA": "servicio_militar",
+    "URY": "servicio_militar",
+    "PRY": "servicio_militar",
+    "BOL": "servicio_militar",
+    "PER": "servicio_militar",
+    "ECU": "servicio_militar",
+    "COL": "servicio_militar",
+    "VEN": "servicio_militar",
+    "GUY": "voluntarios",
+    "SUR": "voluntarios",
+    "GBR": "voluntarios",
+    "FRA": "servicio_militar"
   },
-
   "rivales": {
-    "ARG": ["CHL", "BRA", "GBR"],
-    "CHL": ["ARG", "PER", "BOL"],
-    "PER": ["CHL", "ECU"],
-    "BOL": ["CHL", "PRY"],
-    "ECU": ["PER"],
-    "BRA": ["ARG"],
-    "VEN": ["COL", "GUY"],
-    "COL": ["VEN"],
-    "GUY": ["VEN", "SUR"],
-    "SUR": ["GUY"],
-    "PRY": ["BOL"]
+    "ARG": [
+      "CHL",
+      "BRA",
+      "GBR"
+    ],
+    "CHL": [
+      "ARG",
+      "PER",
+      "BOL"
+    ],
+    "PER": [
+      "CHL",
+      "ECU"
+    ],
+    "BOL": [
+      "CHL",
+      "PRY"
+    ],
+    "ECU": [
+      "PER"
+    ],
+    "BRA": [
+      "ARG"
+    ],
+    "VEN": [
+      "COL",
+      "GUY"
+    ],
+    "COL": [
+      "VEN"
+    ],
+    "GUY": [
+      "VEN",
+      "SUR"
+    ],
+    "SUR": [
+      "GUY"
+    ],
+    "PRY": [
+      "BOL"
+    ]
   },
-
   "_guarniciones_comentario": "Países con su territorio principal fuera del mapa: en vez de la fórmula se ponen estas tropas.",
   "guarniciones": {
     "GBR": [
-      { "provincia": "FK-MAL", "tipo": "infanteria", "nombre": "Naval Party 8901 (Royal Marines)", "efectivos": 70, "entrenamiento": 0.85 }
+      {
+        "provincia": "FK-MAL",
+        "tipo": "infanteria",
+        "nombre": "Naval Party 8901 (Royal Marines)",
+        "efectivos": 70,
+        "entrenamiento": 0.85
+      }
     ],
     "FRA": [
-      { "provincia": "FR-GF", "tipo": "infanteria", "nombre": "3.er Regimiento Extranjero de Infantería", "efectivos": 1200, "entrenamiento": 0.75 }
+      {
+        "provincia": "FR-GF",
+        "tipo": "infanteria",
+        "nombre": "3.er Regimiento Extranjero de Infantería",
+        "efectivos": 1200,
+        "entrenamiento": 0.75
+      }
+    ]
+  },
+  "_economia_comentario": "PBI 1978 en millones de dólares corrientes (aproximado, a verificar con Banco Mundial y Maddison), impuestos como parte del PBI, divisas (reservas), estabilidad 0-100, nivel de cada sector industrial 0-10 (siderurgia sale del acero de Correlates of War si no se da), equipo y repuestos en depósito. El gasto militar inicial sale de Correlates of War (gasto / PBI).",
+  "economia": {
+    "ARG": {
+      "pbi": 58000,
+      "impuestos": 0.2,
+      "divisas": 6000,
+      "estabilidad": 55,
+      "sectores": {
+        "metalmecanica": 5,
+        "aeronautica": 4,
+        "astilleros": 4
+      },
+      "equipo": 4,
+      "repuestos": 800
+    },
+    "BRA": {
+      "pbi": 200000,
+      "impuestos": 0.22,
+      "divisas": 11000,
+      "estabilidad": 60,
+      "sectores": {
+        "metalmecanica": 6,
+        "aeronautica": 5,
+        "astilleros": 5
+      },
+      "equipo": 10,
+      "repuestos": 1500
+    },
+    "CHL": {
+      "pbi": 15700,
+      "impuestos": 0.22,
+      "divisas": 1100,
+      "estabilidad": 55,
+      "sectores": {
+        "metalmecanica": 3,
+        "aeronautica": 1,
+        "astilleros": 3
+      },
+      "equipo": 3,
+      "repuestos": 400
+    },
+    "PER": {
+      "pbi": 11000,
+      "impuestos": 0.15,
+      "divisas": 500,
+      "estabilidad": 45,
+      "sectores": {
+        "metalmecanica": 3,
+        "aeronautica": 1,
+        "astilleros": 3
+      },
+      "equipo": 2,
+      "repuestos": 400
+    },
+    "URY": {
+      "pbi": 5300,
+      "impuestos": 0.2,
+      "divisas": 700,
+      "estabilidad": 50,
+      "sectores": {
+        "metalmecanica": 2,
+        "aeronautica": 0,
+        "astilleros": 1
+      },
+      "equipo": 1,
+      "repuestos": 100
+    },
+    "PRY": {
+      "pbi": 3300,
+      "impuestos": 0.12,
+      "divisas": 600,
+      "estabilidad": 60,
+      "sectores": {
+        "metalmecanica": 1,
+        "aeronautica": 0,
+        "astilleros": 1
+      },
+      "equipo": 1,
+      "repuestos": 60
+    },
+    "BOL": {
+      "pbi": 3900,
+      "impuestos": 0.12,
+      "divisas": 300,
+      "estabilidad": 35,
+      "sectores": {
+        "metalmecanica": 1,
+        "aeronautica": 0,
+        "astilleros": 0
+      },
+      "equipo": 1,
+      "repuestos": 60
+    },
+    "ECU": {
+      "pbi": 7600,
+      "impuestos": 0.14,
+      "divisas": 700,
+      "estabilidad": 45,
+      "sectores": {
+        "metalmecanica": 2,
+        "aeronautica": 0,
+        "astilleros": 1
+      },
+      "equipo": 1,
+      "repuestos": 200
+    },
+    "COL": {
+      "pbi": 24000,
+      "impuestos": 0.12,
+      "divisas": 2400,
+      "estabilidad": 55,
+      "sectores": {
+        "metalmecanica": 3,
+        "aeronautica": 0,
+        "astilleros": 1
+      },
+      "equipo": 2,
+      "repuestos": 200
+    },
+    "VEN": {
+      "pbi": 40000,
+      "impuestos": 0.25,
+      "divisas": 6000,
+      "estabilidad": 65,
+      "sectores": {
+        "metalmecanica": 3,
+        "aeronautica": 0,
+        "astilleros": 2
+      },
+      "equipo": 3,
+      "repuestos": 500
+    },
+    "GUY": {
+      "pbi": 520,
+      "impuestos": 0.25,
+      "divisas": 50,
+      "estabilidad": 50,
+      "sectores": {
+        "metalmecanica": 0,
+        "aeronautica": 0,
+        "astilleros": 0
+      },
+      "equipo": 0,
+      "repuestos": 10
+    },
+    "SUR": {
+      "pbi": 800,
+      "impuestos": 0.25,
+      "divisas": 150,
+      "estabilidad": 55,
+      "sectores": {
+        "metalmecanica": 0,
+        "aeronautica": 0,
+        "astilleros": 0
+      },
+      "equipo": 0,
+      "repuestos": 10
+    }
+  },
+  "_fuerza_aerea_comentario": "Escuadrones de 1978: modelo (data/aviones.json), cantidad de aviones y base (nombre en data/bases.json). Cantidades y bases aproximadas, a verificar con SIPRI y The Military Balance.",
+  "fuerza_aerea": {
+    "ARG": [
+      {
+        "modelo": "mirage3",
+        "aviones": 16,
+        "base": "BAM Mariano Moreno"
+      },
+      {
+        "modelo": "dagger",
+        "aviones": 12,
+        "base": "BAM Tandil"
+      },
+      {
+        "modelo": "a4",
+        "aviones": 24,
+        "base": "BAM Villa Reynolds"
+      },
+      {
+        "modelo": "a4",
+        "aviones": 16,
+        "base": "BAM El Plumerillo"
+      },
+      {
+        "modelo": "a4",
+        "aviones": 10,
+        "base": "BAN Comandante Espora"
+      },
+      {
+        "modelo": "canberra",
+        "aviones": 9,
+        "base": "BAM Paraná"
+      },
+      {
+        "modelo": "pucara",
+        "aviones": 24,
+        "base": "BAM Reconquista"
+      }
+    ],
+    "CHL": [
+      {
+        "modelo": "hunter",
+        "aviones": 20,
+        "base": "Base Aérea Cerro Moreno"
+      },
+      {
+        "modelo": "f5e",
+        "aviones": 15,
+        "base": "Base Aérea Cerro Moreno"
+      },
+      {
+        "modelo": "hunter",
+        "aviones": 10,
+        "base": "Base Aérea Los Cerrillos"
+      },
+      {
+        "modelo": "a37",
+        "aviones": 15,
+        "base": "Base Aérea Chabunco"
+      },
+      {
+        "modelo": "a37",
+        "aviones": 12,
+        "base": "Base Aérea Maquehue"
+      }
+    ],
+    "BRA": [
+      {
+        "modelo": "mirage3",
+        "aviones": 16,
+        "base": "Base Aérea de Anápolis"
+      },
+      {
+        "modelo": "f5e",
+        "aviones": 20,
+        "base": "Base Aérea de Santa Cruz"
+      },
+      {
+        "modelo": "f5e",
+        "aviones": 16,
+        "base": "Base Aérea de Canoas"
+      },
+      {
+        "modelo": "xavante",
+        "aviones": 30,
+        "base": "Base Aérea de Natal"
+      },
+      {
+        "modelo": "xavante",
+        "aviones": 30,
+        "base": "Base Aérea de Canoas"
+      }
+    ],
+    "PER": [
+      {
+        "modelo": "su22",
+        "aviones": 32,
+        "base": "Base Aérea La Joya"
+      },
+      {
+        "modelo": "mirage5",
+        "aviones": 20,
+        "base": "Base Aérea La Joya"
+      },
+      {
+        "modelo": "hunter",
+        "aviones": 16,
+        "base": "Base Aérea El Pato"
+      },
+      {
+        "modelo": "canberra",
+        "aviones": 20,
+        "base": "Base Aérea Las Palmas"
+      },
+      {
+        "modelo": "a37",
+        "aviones": 12,
+        "base": "Base Aérea El Pato"
+      }
+    ],
+    "URY": [
+      {
+        "modelo": "a37",
+        "aviones": 8,
+        "base": "Base Aérea N.º 1 (Carrasco)"
+      },
+      {
+        "modelo": "t33",
+        "aviones": 8,
+        "base": "Base Aérea N.º 1 (Carrasco)"
+      }
+    ],
+    "BOL": [
+      {
+        "modelo": "t33",
+        "aviones": 15,
+        "base": "Base Aérea El Alto"
+      }
+    ],
+    "PRY": [
+      {
+        "modelo": "at6",
+        "aviones": 10,
+        "base": "Base Aérea de Campo Grande (Asunción)"
+      }
+    ],
+    "ECU": [
+      {
+        "modelo": "jaguar",
+        "aviones": 12,
+        "base": "Base Aérea de Taura"
+      },
+      {
+        "modelo": "a37",
+        "aviones": 12,
+        "base": "Base Aérea de Taura"
+      }
+    ],
+    "COL": [
+      {
+        "modelo": "mirage5",
+        "aviones": 16,
+        "base": "Base Aérea de Palanquero"
+      }
+    ],
+    "VEN": [
+      {
+        "modelo": "mirage5",
+        "aviones": 16,
+        "base": "Base Aérea El Libertador"
+      },
+      {
+        "modelo": "canberra",
+        "aviones": 16,
+        "base": "Base Aérea El Libertador"
+      }
     ]
   }
 }

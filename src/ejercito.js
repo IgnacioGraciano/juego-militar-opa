@@ -6,6 +6,8 @@
 // mecánicas; después se reemplaza por los registros reales de cada país.
 
 import { datos, cambiarDueno, nombrePais } from './datos.js';
+import { hayEquipo, gastarEquipo, equipoPorTipo } from './economia.js';
+import { factorRecuperacion, zona, suministroEn } from './suministro.js';
 
 export const ejercito = {
   brigadas: [],
@@ -317,7 +319,7 @@ export function leyDe(pais) {
 
 export function costoBrigada(pais, tipo) {
   const ley = leyDe(pais);
-  return { efectivos: tipos()[tipo].efectivos, dias: ley.dias_formacion, entrenamiento: ley.entrenamiento };
+  return { efectivos: tipos()[tipo].efectivos, dias: ley.dias_formacion, entrenamiento: ley.entrenamiento, equipo: equipoPorTipo(tipo) };
 }
 
 export function puedeReclutar(pais, tipo, provincia) {
@@ -325,6 +327,7 @@ export function puedeReclutar(pais, tipo, provincia) {
   if (datos.provincias[provincia].pais !== pais) return 'No se recluta en territorio ocupado.';
   const c = costoBrigada(pais, tipo);
   if ((ejercito.manoDeObra[pais] ?? 0) < c.efectivos) return 'No alcanza la mano de obra.';
+  if (!hayEquipo(pais, tipo)) return `Falta equipo (${c.equipo} juego/s): firmá un contrato de equipo para brigadas.`;
   return null;
 }
 
@@ -333,6 +336,7 @@ export function reclutar(pais, tipo, provincia) {
   if (error) return error;
   const c = costoBrigada(pais, tipo);
   ejercito.manoDeObra[pais] -= c.efectivos;
+  gastarEquipo(pais, tipo);
   const b = nuevaBrigada(pais, tipo, provincia);
   b.formacion = { horas: c.dias * 24, total: c.dias * 24 };
   b.organizacion = 0;
@@ -497,7 +501,7 @@ export function actualizarHora(horas) {
     }
     if (b.mov) moverUnaHora(b);
     if (!b.enCombate) {
-      b.organizacion = Math.min(1, b.organizacion + rec.organizacion_por_hora);
+      b.organizacion = Math.min(1, b.organizacion + rec.organizacion_por_hora * factorRecuperacion(b.pais, b.provincia));
       if (!b.mov && !b.operacion) b.atrincheramiento = Math.min(rec.atrincheramiento_maximo, b.atrincheramiento + rec.atrincheramiento_por_dia / 24);
     }
     b.enCombate = false;
@@ -516,6 +520,7 @@ function actualizarDia() {
   // Refuerzos: completar brigadas en territorio propio que no están peleando.
   for (const b of ejercito.brigadas) {
     if (b.formacion || b.efectivos >= b.efectivosMax || datos.duenos[b.provincia] !== b.pais) continue;
+    if (zona(suministroEn(b.pais, b.provincia)) === 'rojo') continue;
     const falta = Math.min(rr.refuerzos_por_dia, b.efectivosMax - b.efectivos, ejercito.manoDeObra[b.pais] ?? 0);
     b.efectivos += falta;
     ejercito.manoDeObra[b.pais] -= falta;

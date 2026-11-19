@@ -444,6 +444,43 @@ def agregar_terreno_y_rios(provincias, datos_prov, fronteras, ciudades, rios):
     print("Terreno:", cuenta, "| fronteras de río:", sum(len(d["vecinos_rio"]) for d in datos_prov) // 2)
 
 
+# ---------------------------------------------------------------- trenes
+def procesar_trenes(geoms, datos_prov, fronteras, region_juego):
+    """Vías de tren: líneas para dibujar, si cada provincia tiene tren y qué
+    fronteras cruza una vía (para el suministro)."""
+    ne = descargar("ne_10m_railroads")
+    lineas_tren = []
+    for f in ne["features"]:
+        g = shape(f["geometry"])
+        if not g.intersects(CAJA_LONLAT):
+            continue
+        g = proyectar(g.intersection(CAJA_LONLAT)).intersection(region_juego)
+        lineas_tren.extend(l for l in lineas(g) if l.length > 0.3)
+    red = shapely.union_all(lineas_tren) if lineas_tren else LineString()
+    for i, g in enumerate(geoms):
+        dentro = red.intersection(g).length if not red.is_empty else 0.0
+        datos_prov[i]["tren"] = dentro >= 3.0
+        datos_prov[i]["vecinos_tren"] = []
+    zona = red.buffer(0.6) if not red.is_empty else Polygon()
+    pares = set()
+    for f in fronteras:
+        if f["b"] < 0:
+            continue
+        pts = f["p"]
+        l = LineString(list(zip(pts[0::2], pts[1::2])))
+        if l.intersects(zona):
+            pares.add((f["a"], f["b"]))
+    for a, b in pares:
+        if datos_prov[a]["tren"] and datos_prov[b]["tren"]:
+            datos_prov[a]["vecinos_tren"].append(datos_prov[b]["id"])
+            datos_prov[b]["vecinos_tren"].append(datos_prov[a]["id"])
+    for d in datos_prov:
+        d["vecinos_tren"] = sorted(set(d["vecinos_tren"]))
+    salida = [plano(l.simplify(0.3).coords, 1) for l in lineas(shapely.line_merge(red))] if not red.is_empty else []
+    print("Trenes:", sum(d["tren"] for d in datos_prov), "provincias con tren,", len(pares), "cruces")
+    return {"fuente": FUENTE_NE + " (railroads). Red actual, no la de 1978.", "trenes": salida}
+
+
 # ---------------------------------------------------------------- puntos
 def provincia_de(punto, geoms, arbol, max_dist=4.0):
     cand = arbol.query(punto, predicate="intersects")
@@ -680,6 +717,7 @@ def main():
     lagos = procesar_lagos(region_juego)
     regiones = procesar_regiones()
     agregar_terreno_y_rios(provincias, datos_prov, fronteras, ciudades, rios)
+    trenes = procesar_trenes(geoms, datos_prov, fronteras, region_juego)
 
     print("Relieve ...")
     ancho, alto = construir_relieve(geoms, tierra_ajena)
@@ -707,6 +745,7 @@ def main():
     escribir("rios.json", rios)
     escribir("lagos.json", lagos)
     escribir("regiones.json", regiones)
+    escribir("trenes.json", trenes)
     print("Listo.")
 
 

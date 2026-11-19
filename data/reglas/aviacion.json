@@ -1,0 +1,57 @@
+{
+  "_comentario": "Reglas de la aviación. Poder aire-aire y de ataque de cada modelo = fórmula fija sobre sus datos reales (data/aviones.json). Los valores se ajustan probando.",
+  "fuente": "Reglas del juego (elaboración propia)",
+
+  "formula": {
+    "_aire": "aire = velocidad_kmh / 2350 * 0.5 + maniobra * 0.4 + canones * 0.1 + misiles_cortos * 0.3 + misiles_largos * 0.2",
+    "_ataque": "ataque = carga_kg / 4000 + (ataque_ligero ? 0.15 : 0)",
+    "aire_velocidad": 0.5, "aire_maniobra": 0.4, "aire_canones": 0.1, "aire_misiles_cortos": 0.3, "aire_misiles_largos": 0.2,
+    "velocidad_referencia": 2350,
+    "carga_referencia": 4000,
+    "bonus_ataque_ligero": 0.15
+  },
+
+  "pilotos": {
+    "experiencia_inicial": 0.4,
+    "experiencia_por_mision": 0.02,
+    "rescate_territorio_propio": 0.85,
+    "reserva_inicial_por_avion": 0.5,
+    "formados_por_mes_por_cada_1000_millones_de_pbi": 0.4
+  },
+
+  "combate_aereo": {
+    "_comentario": "Cuando dos grupos se cruzan: ventaja = raíz(poder A / poder B). Bajas por pasada según la ventaja.",
+    "bajas_base": 0.08,
+    "deteccion": 0.8,
+    "deteccion_vuelo_bajo": 0.45,
+    "deteccion_noche": 0.6,
+    "antiaereo_por_brigada": 0.012,
+    "antiaereo_vuelo_bajo": 1.8,
+    "sin_capacidad_nocturna": 0.3
+  },
+
+  "operaciones": {
+    "apoyo_maximo": 0.4,
+    "apoyo_por_poder": 0.08,
+    "superioridad_bonus": 0.1,
+    "superioridad_umbral": 0.7,
+    "bombardeo_organizacion": 0.04,
+    "bombardeo_atrincheramiento": 0.03
+  },
+
+  "paquetes": {
+    "base": { "nombre": "Base aérea", "texto": "Destruye aviones en tierra y baja la disponibilidad de la base.", "aviones_destruidos_por_poder": 1.2 },
+    "rutas": { "nombre": "Rutas y vías de tren", "texto": "Corta el suministro que pasa por la provincia durante unos días.", "dano_por_poder": 0.12 },
+    "tropas": { "nombre": "Tropas", "texto": "Desorganiza y causa bajas a las tropas de la provincia.", "organizacion_por_poder": 0.08, "bajas_por_poder": 0.01 },
+    "deposito": { "nombre": "Depósito", "texto": "Deja fuera de servicio un depósito enemigo unos días.", "dias_por_poder": 2 }
+  },
+
+  "horarios": {
+    "dia": { "nombre": "De día", "hora": 12 },
+    "amanecer": { "nombre": "Al amanecer", "hora": 6 },
+    "noche": { "nombre": "De noche", "hora": 23 }
+  },
+
+  "disponibilidad_minima": 0.15,
+  "capacidad_base": 60
+}

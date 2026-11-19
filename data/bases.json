@@ -2,50 +2,331 @@
   "_comentario": "Bases militares de 1978-1982. tipo: aerea, naval o aeronaval. Coordenadas en grados (lon, lat).",
   "fuente": "Primera versión armada con conocimiento general. Coordenadas aproximadas: verificar con fuentes (ver Fuentes de datos en el guion).",
   "bases": [
-    { "nombre": "BAM El Palomar", "pais": "ARG", "tipo": "aerea", "lon": -58.61, "lat": -34.61, "nota": "I Brigada Aérea (transporte)" },
-    { "nombre": "BAM Morón", "pais": "ARG", "tipo": "aerea", "lon": -58.64, "lat": -34.68 },
-    { "nombre": "BAM Mariano Moreno", "pais": "ARG", "tipo": "aerea", "lon": -58.79, "lat": -34.56, "nota": "VIII Brigada Aérea (Mirage III)" },
-    { "nombre": "BAM Tandil", "pais": "ARG", "tipo": "aerea", "lon": -59.23, "lat": -37.24, "nota": "VI Brigada Aérea" },
-    { "nombre": "BAM Villa Reynolds", "pais": "ARG", "tipo": "aerea", "lon": -65.39, "lat": -33.73, "nota": "V Brigada Aérea (A-4)" },
-    { "nombre": "BAM Reconquista", "pais": "ARG", "tipo": "aerea", "lon": -59.68, "lat": -29.21, "nota": "III Brigada Aérea (Pucará)" },
-    { "nombre": "BAM El Plumerillo", "pais": "ARG", "tipo": "aerea", "lon": -68.79, "lat": -32.83, "nota": "IV Brigada Aérea" },
-    { "nombre": "BAM Paraná", "pais": "ARG", "tipo": "aerea", "lon": -60.48, "lat": -31.79, "nota": "II Brigada Aérea (Canberra)" },
-    { "nombre": "BAM Comodoro Rivadavia", "pais": "ARG", "tipo": "aerea", "lon": -67.47, "lat": -45.79, "nota": "IX Brigada Aérea" },
-    { "nombre": "BAM Río Gallegos", "pais": "ARG", "tipo": "aerea", "lon": -69.31, "lat": -51.61 },
-    { "nombre": "BAM San Julián", "pais": "ARG", "tipo": "aerea", "lon": -67.80, "lat": -49.31 },
-    { "nombre": "BAN Río Grande", "pais": "ARG", "tipo": "aeronaval", "lon": -67.75, "lat": -53.78 },
-    { "nombre": "BAN Comandante Espora", "pais": "ARG", "tipo": "aeronaval", "lon": -62.17, "lat": -38.73 },
-    { "nombre": "BAN Almirante Zar", "pais": "ARG", "tipo": "aeronaval", "lon": -65.27, "lat": -43.21, "nota": "Trelew" },
-    { "nombre": "BAN Punta Indio", "pais": "ARG", "tipo": "aeronaval", "lon": -57.29, "lat": -35.35 },
-    { "nombre": "Base Naval Puerto Belgrano", "pais": "ARG", "tipo": "naval", "lon": -62.10, "lat": -38.89, "nota": "Principal base de la Flota de Mar" },
-    { "nombre": "Base Naval Mar del Plata", "pais": "ARG", "tipo": "naval", "lon": -57.53, "lat": -38.04, "nota": "Submarinos" },
-    { "nombre": "Base Naval Ushuaia", "pais": "ARG", "tipo": "naval", "lon": -68.30, "lat": -54.81 },
-
-    { "nombre": "Base Aérea Los Cerrillos", "pais": "CHL", "tipo": "aerea", "lon": -70.70, "lat": -33.49 },
-    { "nombre": "Base Aérea El Bosque", "pais": "CHL", "tipo": "aerea", "lon": -70.69, "lat": -33.56 },
-    { "nombre": "Base Aérea Quintero", "pais": "CHL", "tipo": "aerea", "lon": -71.52, "lat": -32.79 },
-    { "nombre": "Base Aérea Cerro Moreno", "pais": "CHL", "tipo": "aerea", "lon": -70.44, "lat": -23.44, "nota": "Antofagasta" },
-    { "nombre": "Base Aérea Maquehue", "pais": "CHL", "tipo": "aerea", "lon": -72.64, "lat": -38.77, "nota": "Temuco" },
-    { "nombre": "Base Aérea Chabunco", "pais": "CHL", "tipo": "aerea", "lon": -70.85, "lat": -53.01, "nota": "Punta Arenas" },
-    { "nombre": "Base Naval Valparaíso", "pais": "CHL", "tipo": "naval", "lon": -71.63, "lat": -33.03 },
-    { "nombre": "Base Naval Talcahuano", "pais": "CHL", "tipo": "naval", "lon": -73.10, "lat": -36.70 },
-    { "nombre": "Base Naval Punta Arenas", "pais": "CHL", "tipo": "naval", "lon": -70.91, "lat": -53.16 },
-    { "nombre": "Base Naval Puerto Williams", "pais": "CHL", "tipo": "naval", "lon": -67.61, "lat": -54.93 },
-
-    { "nombre": "Base Aérea de Anápolis", "pais": "BRA", "tipo": "aerea", "lon": -48.96, "lat": -16.23, "nota": "Mirage III" },
-    { "nombre": "Base Aérea de Santa Cruz", "pais": "BRA", "tipo": "aerea", "lon": -43.72, "lat": -22.93 },
-    { "nombre": "Base Aérea de Canoas", "pais": "BRA", "tipo": "aerea", "lon": -51.14, "lat": -29.95 },
-    { "nombre": "Base Aérea de Natal", "pais": "BRA", "tipo": "aerea", "lon": -35.25, "lat": -5.91 },
-    { "nombre": "Base Naval de Río de Janeiro", "pais": "BRA", "tipo": "naval", "lon": -43.17, "lat": -22.89 },
-
-    { "nombre": "Base Aérea N.º 1 (Carrasco)", "pais": "URY", "tipo": "aerea", "lon": -56.03, "lat": -34.84 },
-    { "nombre": "Base Aérea El Alto", "pais": "BOL", "tipo": "aerea", "lon": -68.19, "lat": -16.51 },
-
-    { "nombre": "Base Aérea Las Palmas", "pais": "PER", "tipo": "aerea", "lon": -76.99, "lat": -12.16 },
-    { "nombre": "Base Aérea La Joya", "pais": "PER", "tipo": "aerea", "lon": -71.88, "lat": -16.78 },
-    { "nombre": "Base Aérea El Pato", "pais": "PER", "tipo": "aerea", "lon": -81.25, "lat": -4.58, "nota": "Talara" },
-    { "nombre": "Base Naval del Callao", "pais": "PER", "tipo": "naval", "lon": -77.15, "lat": -12.05 },
-
-    { "nombre": "Moody Brook", "pais": "GBR", "tipo": "naval", "lon": -57.92, "lat": -51.69, "nota": "Destacamento de Royal Marines (Naval Party 8901)" }
+    {
+      "nombre": "BAM El Palomar",
+      "pais": "ARG",
+      "tipo": "aerea",
+      "lon": -58.61,
+      "lat": -34.61,
+      "nota": "I Brigada Aérea (transporte)"
+    },
+    {
+      "nombre": "BAM Morón",
+      "pais": "ARG",
+      "tipo": "aerea",
+      "lon": -58.64,
+      "lat": -34.68
+    },
+    {
+      "nombre": "BAM Mariano Moreno",
+      "pais": "ARG",
+      "tipo": "aerea",
+      "lon": -58.79,
+      "lat": -34.56,
+      "nota": "VIII Brigada Aérea (Mirage III)"
+    },
+    {
+      "nombre": "BAM Tandil",
+      "pais": "ARG",
+      "tipo": "aerea",
+      "lon": -59.23,
+      "lat": -37.24,
+      "nota": "VI Brigada Aérea"
+    },
+    {
+      "nombre": "BAM Villa Reynolds",
+      "pais": "ARG",
+      "tipo": "aerea",
+      "lon": -65.39,
+      "lat": -33.73,
+      "nota": "V Brigada Aérea (A-4)"
+    },
+    {
+      "nombre": "BAM Reconquista",
+      "pais": "ARG",
+      "tipo": "aerea",
+      "lon": -59.68,
+      "lat": -29.21,
+      "nota": "III Brigada Aérea (Pucará)"
+    },
+    {
+      "nombre": "BAM El Plumerillo",
+      "pais": "ARG",
+      "tipo": "aerea",
+      "lon": -68.79,
+      "lat": -32.83,
+      "nota": "IV Brigada Aérea"
+    },
+    {
+      "nombre": "BAM Paraná",
+      "pais": "ARG",
+      "tipo": "aerea",
+      "lon": -60.48,
+      "lat": -31.79,
+      "nota": "II Brigada Aérea (Canberra)"
+    },
+    {
+      "nombre": "BAM Comodoro Rivadavia",
+      "pais": "ARG",
+      "tipo": "aerea",
+      "lon": -67.47,
+      "lat": -45.79,
+      "nota": "IX Brigada Aérea"
+    },
+    {
+      "nombre": "BAM Río Gallegos",
+      "pais": "ARG",
+      "tipo": "aerea",
+      "lon": -69.31,
+      "lat": -51.61
+    },
+    {
+      "nombre": "BAM San Julián",
+      "pais": "ARG",
+      "tipo": "aerea",
+      "lon": -67.8,
+      "lat": -49.31
+    },
+    {
+      "nombre": "BAN Río Grande",
+      "pais": "ARG",
+      "tipo": "aeronaval",
+      "lon": -67.75,
+      "lat": -53.78
+    },
+    {
+      "nombre": "BAN Comandante Espora",
+      "pais": "ARG",
+      "tipo": "aeronaval",
+      "lon": -62.17,
+      "lat": -38.73
+    },
+    {
+      "nombre": "BAN Almirante Zar",
+      "pais": "ARG",
+      "tipo": "aeronaval",
+      "lon": -65.27,
+      "lat": -43.21,
+      "nota": "Trelew"
+    },
+    {
+      "nombre": "BAN Punta Indio",
+      "pais": "ARG",
+      "tipo": "aeronaval",
+      "lon": -57.29,
+      "lat": -35.35
+    },
+    {
+      "nombre": "Base Naval Puerto Belgrano",
+      "pais": "ARG",
+      "tipo": "naval",
+      "lon": -62.1,
+      "lat": -38.89,
+      "nota": "Principal base de la Flota de Mar"
+    },
+    {
+      "nombre": "Base Naval Mar del Plata",
+      "pais": "ARG",
+      "tipo": "naval",
+      "lon": -57.53,
+      "lat": -38.04,
+      "nota": "Submarinos"
+    },
+    {
+      "nombre": "Base Naval Ushuaia",
+      "pais": "ARG",
+      "tipo": "naval",
+      "lon": -68.3,
+      "lat": -54.81
+    },
+    {
+      "nombre": "Base Aérea Los Cerrillos",
+      "pais": "CHL",
+      "tipo": "aerea",
+      "lon": -70.7,
+      "lat": -33.49
+    },
+    {
+      "nombre": "Base Aérea El Bosque",
+      "pais": "CHL",
+      "tipo": "aerea",
+      "lon": -70.69,
+      "lat": -33.56
+    },
+    {
+      "nombre": "Base Aérea Quintero",
+      "pais": "CHL",
+      "tipo": "aerea",
+      "lon": -71.52,
+      "lat": -32.79
+    },
+    {
+      "nombre": "Base Aérea Cerro Moreno",
+      "pais": "CHL",
+      "tipo": "aerea",
+      "lon": -70.44,
+      "lat": -23.44,
+      "nota": "Antofagasta"
+    },
+    {
+      "nombre": "Base Aérea Maquehue",
+      "pais": "CHL",
+      "tipo": "aerea",
+      "lon": -72.64,
+      "lat": -38.77,
+      "nota": "Temuco"
+    },
+    {
+      "nombre": "Base Aérea Chabunco",
+      "pais": "CHL",
+      "tipo": "aerea",
+      "lon": -70.85,
+      "lat": -53.01,
+      "nota": "Punta Arenas"
+    },
+    {
+      "nombre": "Base Naval Valparaíso",
+      "pais": "CHL",
+      "tipo": "naval",
+      "lon": -71.63,
+      "lat": -33.03
+    },
+    {
+      "nombre": "Base Naval Talcahuano",
+      "pais": "CHL",
+      "tipo": "naval",
+      "lon": -73.1,
+      "lat": -36.7
+    },
+    {
+      "nombre": "Base Naval Punta Arenas",
+      "pais": "CHL",
+      "tipo": "naval",
+      "lon": -70.91,
+      "lat": -53.16
+    },
+    {
+      "nombre": "Base Naval Puerto Williams",
+      "pais": "CHL",
+      "tipo": "naval",
+      "lon": -67.61,
+      "lat": -54.93
+    },
+    {
+      "nombre": "Base Aérea de Anápolis",
+      "pais": "BRA",
+      "tipo": "aerea",
+      "lon": -48.96,
+      "lat": -16.23,
+      "nota": "Mirage III"
+    },
+    {
+      "nombre": "Base Aérea de Santa Cruz",
+      "pais": "BRA",
+      "tipo": "aerea",
+      "lon": -43.72,
+      "lat": -22.93
+    },
+    {
+      "nombre": "Base Aérea de Canoas",
+      "pais": "BRA",
+      "tipo": "aerea",
+      "lon": -51.14,
+      "lat": -29.95
+    },
+    {
+      "nombre": "Base Aérea de Natal",
+      "pais": "BRA",
+      "tipo": "aerea",
+      "lon": -35.25,
+      "lat": -5.91
+    },
+    {
+      "nombre": "Base Naval de Río de Janeiro",
+      "pais": "BRA",
+      "tipo": "naval",
+      "lon": -43.17,
+      "lat": -22.89
+    },
+    {
+      "nombre": "Base Aérea N.º 1 (Carrasco)",
+      "pais": "URY",
+      "tipo": "aerea",
+      "lon": -56.03,
+      "lat": -34.84
+    },
+    {
+      "nombre": "Base Aérea El Alto",
+      "pais": "BOL",
+      "tipo": "aerea",
+      "lon": -68.19,
+      "lat": -16.51
+    },
+    {
+      "nombre": "Base Aérea Las Palmas",
+      "pais": "PER",
+      "tipo": "aerea",
+      "lon": -76.99,
+      "lat": -12.16
+    },
+    {
+      "nombre": "Base Aérea La Joya",
+      "pais": "PER",
+      "tipo": "aerea",
+      "lon": -71.88,
+      "lat": -16.78
+    },
+    {
+      "nombre": "Base Aérea El Pato",
+      "pais": "PER",
+      "tipo": "aerea",
+      "lon": -81.25,
+      "lat": -4.58,
+      "nota": "Talara"
+    },
+    {
+      "nombre": "Base Naval del Callao",
+      "pais": "PER",
+      "tipo": "naval",
+      "lon": -77.15,
+      "lat": -12.05
+    },
+    {
+      "nombre": "Moody Brook",
+      "pais": "GBR",
+      "tipo": "naval",
+      "lon": -57.92,
+      "lat": -51.69,
+      "nota": "Destacamento de Royal Marines (Naval Party 8901)"
+    },
+    {
+      "nombre": "Base Aérea de Campo Grande (Asunción)",
+      "pais": "PRY",
+      "tipo": "aerea",
+      "lon": -57.52,
+      "lat": -25.24
+    },
+    {
+      "nombre": "Base Aérea de Taura",
+      "pais": "ECU",
+      "tipo": "aerea",
+      "lon": -79.68,
+      "lat": -2.26
+    },
+    {
+      "nombre": "Base Aérea de Palanquero",
+      "pais": "COL",
+      "tipo": "aerea",
+      "lon": -74.66,
+      "lat": 5.48
+    },
+    {
+      "nombre": "Base Aérea El Libertador",
+      "pais": "VEN",
+      "tipo": "aerea",
+      "lon": -67.65,
+      "lat": 10.25,
+      "nota": "Maracay"
+    }
   ]
 }
