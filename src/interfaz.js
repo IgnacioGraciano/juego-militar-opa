@@ -1,5 +1,5 @@
 // Interfaz sobre el mapa: reloj, resumen del país, ficha de provincia, panel de tropas,
-// planificador de Operaciones, decisiones entre fases y registro de eventos.
+// planificador de Operaciones y batallas en curso.
 // Usa los elementos de index.html. Las acciones las resuelve principal.js.
 
 import { datos, nombrePais } from './datos.js';
@@ -12,8 +12,8 @@ import {
   leyDe, horasRestantes, relevarGeneral, calcularRuta,
 } from './ejercito.js';
 import {
-  operaciones, operacionesActivas, ejesPosibles, brigadasDisponibles, calcularCalidad, predecir,
-  reconocida, anchoFrente, POSTURAS, FASES,
+  operacionesActivas, ejesPosibles, brigadasDisponibles, calcularCalidad, predecir,
+  reconocida, anchoFrente, POSTURAS, batallaEn, atacantesEnPosicion, defensoresDe, objetivoActual,
 } from './operaciones.js';
 import { $, h, miles, dec, pct, chipPais, iconoUnidad } from './dom.js';
 import { suministroEn, zona, NOMBRE_ZONA, provinciaApta, depositosDe, describirDeposito, capitalDe } from './suministro.js';
@@ -42,8 +42,6 @@ export function iniciarInterfaz(acciones) {
 
   tiempo.eventos.addEventListener('hora', actualizarReloj);
   tiempo.eventos.addEventListener('estado', actualizarReloj);
-  ejercito.eventos.addEventListener('mensaje', (e) => agregarMensaje(e.detail));
-  ejercito.eventos.addEventListener('decision', (e) => { if (e.detail.pais === datos.escenario.pais_jugador) mostrarDecision(e.detail); });
   actualizarReloj();
   actualizarResumen();
 }
@@ -72,17 +70,25 @@ export function actualizarResumen() {
   const ops = operacionesActivas(jugador);
   const lista = $('lista-operaciones');
   lista.hidden = !ops.length;
-  lista.replaceChildren(...ops.map((op) => h('button', {
-    type: 'button', class: `op ${op.estado === 'decision' ? 'espera' : ''}`,
-    onclick: () => (op.estado === 'decision' ? mostrarDecision(op) : acc.centrarEn(op.objetivos[op.objetivoActual])),
-  }, h('b', {}, datos.provincias[op.objetivos[op.objetivoActual]].nombre), ' ', estadoOperacion(op))));
+  lista.replaceChildren(...ops.map((op) => h('div', { class: `op ${op.estado}` },
+    h('button', { type: 'button', class: 'op-ir', title: 'Ir a la batalla', onclick: () => acc.verBatalla(objetivoActual(op)) },
+      h('b', {}, datos.provincias[objetivoActual(op)].nombre),
+      h('span', {}, estadoOperacion(op)),
+      op.estado === 'combate' && !op.horasBombardeo ? barraBatalla(op) : null),
+    h('button', { type: 'button', class: 'mini', title: 'Suspender el ataque', 'aria-label': 'Suspender el ataque', onclick: () => acc.cancelarOperacion(op) }, '×'))));
 }
 
-function estadoOperacion(op) {
+export function estadoOperacion(op) {
   if (op.estado === 'reuniendo') return 'reuniendo tropas';
   if (op.estado === 'preparando') return `preparación (${Math.ceil(op.horasPreparacion / 24)} d)`;
-  if (op.estado === 'decision') return 'esperando tu orden';
-  return FASES[op.fase].toLowerCase();
+  if (op.horasBombardeo > 0) return `bombardeo (${op.horasBombardeo} h)`;
+  return `en combate · ${Math.ceil(op.horasBatalla / 24)}.º día`;
+}
+
+// Barra de la batalla: la parte propia (verde) contra la enemiga (roja).
+export function barraBatalla(op, propio = true) {
+  const p = Math.round((propio ? op.balance : 1 - op.balance) * 100);
+  return h('span', { class: 'barra-batalla', title: `Ventaja ${p} %` }, h('i', { style: `width:${p}%` }));
 }
 
 // ------------------------------------------------------------------ cursor
@@ -134,6 +140,7 @@ export function mostrarProvincia(i) {
   } else if (!propias.length) filas.push(['Tropas', 'Ninguna']);
 
   const acciones = [];
+  for (const op of batallaEn(i)) acciones.push(seccionBatalla(op, jugador));
   if (propia && !deposito && capitalDe(jugador) !== i) {
     const error = provinciaApta(jugador, i);
     acciones.push(h('button', { type: 'button', class: 'boton', disabled: !!error, title: error ?? '', onclick: () => acc.construirDeposito(i) },
@@ -172,6 +179,29 @@ export function mostrarProvincia(i) {
   $('ficha-datos').replaceChildren(...filas.flatMap(([k, v]) => [h('dt', {}, k), h('dd', {}, v)]));
   $('ficha-acciones').replaceChildren(...acciones);
   ficha.hidden = false;
+}
+
+// Batalla en curso sobre la provincia: los dos lados, la barra y las bajas.
+function seccionBatalla(op, jugador) {
+  const propia = op.pais === jugador;
+  const ataca = atacantesEnPosicion(op);
+  const defiende = op.estado === 'combate' ? defensoresDe(op) : [];
+  const hombres = (l) => miles(l.reduce((s, b) => s + b.efectivos, 0));
+  const org = (l) => (l.length ? Math.round((l.reduce((s, b) => s + b.organizacion, 0) / l.length) * 100) : 0);
+  const lado = (titulo, pais, l) => h('div', { class: 'lado' },
+    h('div', { class: 'rotulo' }, titulo),
+    chipPais(pais),
+    h('small', {}, `${l.length} ${l.length === 1 ? 'unidad' : 'unidades'} · ${hombres(l)} h · org. ${org(l)} %`));
+  const filas = [];
+  if (op.estado === 'combate') filas.push(barraBatalla(op, propia));
+  const bajas = h('small', { class: 'tenue' }, `Bajas: ${miles(propia ? op.bajas.propias : op.bajas.enemigas)} propias · ${miles(propia ? op.bajas.enemigas : op.bajas.propias)} enemigas`);
+  return h('div', { class: 'batalla' },
+    h('div', { class: 'batalla-titulo' }, h('span', { class: 'espadas', 'aria-hidden': 'true' }, '⚔'), h('b', {}, propia ? 'Tu ataque' : `Ataque de ${nombrePais(op.pais)}`), h('small', {}, estadoOperacion(op))),
+    h('div', { class: 'lados' }, lado('Ataca', op.pais, ataca), lado('Defiende', datos.duenos[objetivoActual(op)], defiende)),
+    ...filas,
+    bajas,
+    op.aire?.texto ? h('small', { class: 'tenue' }, op.aire.texto) : null,
+    propia ? h('button', { type: 'button', class: 'boton peligro', onclick: () => acc.cancelarOperacion(op) }, 'Suspender el ataque') : null);
 }
 
 // ------------------------------------------------------------------ tropas elegidas
@@ -288,7 +318,6 @@ export function renderPlan() {
 
   // Aviación: escuadrones propios libres que llegan al objetivo
   plan.aviacion ??= [];
-  plan.aviacionFases ??= { preparacion: true, ruptura: true, explotacion: true };
   const enAlcanceYa = escuadronesDe(jugador).filter((e) => !e.ocupado && enAlcance(e, objetivo));
   $('plan-aviacion').replaceChildren(
     ...(enAlcanceYa.length ? enAlcanceYa.map((e) => h('label', { class: 'fila-check' },
@@ -300,8 +329,6 @@ export function renderPlan() {
       iconoUnidad('avion', e.pais),
       h('span', {}, h('b', {}, e.nombre), h('small', {}, `${avionesListos(e)} listos · ${modelo(e.modelo).rol === 'caza' ? 'superioridad aérea' : 'ataque a tierra'}`))))
       : [h('p', { class: 'nota' }, 'Ningún escuadrón libre llega a este objetivo.')]),
-    h('div', { class: 'artilleria' }, ...[['preparacion', 'Bombardeo en la preparación'], ['ruptura', 'Apoyo cercano en la ruptura'], ['explotacion', 'Persecución en la explotación']]
-      .map(([fase, texto]) => h('label', {}, h('input', { type: 'checkbox', checked: plan.aviacionFases[fase], onchange: (ev) => { plan.aviacionFases[fase] = ev.target.checked; cambioPlan(false); } }), ` ${texto}`))),
   );
   actualizarPrediccion();
 }
@@ -324,14 +351,16 @@ function actualizarPrediccion() {
     const pr = plan.fuerzas.length && plan.eje >= 0 ? predecir(plan) : null;
     const caja = $('plan-prediccion');
     if (!pr) { caja.replaceChildren(h('p', { class: 'nota' }, 'Elegí tropas para ver la predicción.')); return; }
-    const res = datos.reglas.combate.resultados;
+    const p = Math.round(pr.probGanar * 100);
+    const veredicto = p >= 75 ? 'Muy probable' : p >= 55 ? 'Probable' : p >= 35 ? 'Parejo' : 'Difícil';
     caja.replaceChildren(
-      h('p', { class: 'probable' }, 'Resultado probable de la ruptura: ', h('b', {}, res.find((r) => r.clave === pr.probable).nombre)),
-      h('ul', { class: 'probabilidades' }, ...res.map((r) => h('li', { class: r.clave },
-        h('span', {}, r.nombre), h('span', { class: 'medidor' }, h('i', { style: `width:${Math.round(pr.probabilidades[r.clave] * 100)}%` })),
-        h('small', {}, `${Math.round(pr.probabilidades[r.clave] * 100)} %`)))),
+      h('div', { class: 'pronostico' },
+        h('div', { class: 'pronostico-cifra' }, h('b', {}, `${p} %`), h('small', {}, 'de tomar la provincia')),
+        h('div', {}, h('b', {}, veredicto), h('small', {}, pr.dias != null ? `Unos ${pr.dias < 1 ? 'menos de 1' : Math.round(pr.dias)} ${Math.round(pr.dias) === 1 || pr.dias < 1 ? 'día' : 'días'} de combate` : 'Las tropas se agotarían antes'))),
+      h('span', { class: 'medidor grande' }, h('i', { style: `width:${p}%` })),
+      pr.guarnicion ? h('p', { class: 'nota' }, 'Sin brigadas enemigas: defiende la guarnición territorial.') : null,
       pr.superioridad != null ? h('p', { class: 'nota' }, `Superioridad aérea estimada: ${pct(pr.superioridad)}${pr.superioridad >= 0.7 ? ' (dominás el aire)' : pr.superioridad < 0.3 ? ' (el enemigo domina el aire)' : ''}.`) : null,
-      h('p', { class: 'nota' }, `Ventaja esperada ${dec(pr.ventajaMedia)} (raíz del poder de ataque sobre el de defensa, por el azar). `,
+      h('p', { class: 'nota' }, 'El combate es continuo: sigue hasta que un lado se queda sin organización. ',
         pr.visto ? `Enemigo confirmado: ${pr.defensores} brigada(s).` : 'Fuerza enemiga estimada: sin reconocer, puede haber más o menos tropas.'),
       h('div', { class: 'multiplicadores' },
         h('div', {}, h('div', { class: 'rotulo' }, 'Ataque'), ...pr.multAtaque.map(([k, v]) => h('div', { class: v > 1.001 ? 'sube' : v < 0.999 ? 'baja' : '' }, k, h('b', {}, `×${dec(v)}`)))),
@@ -340,54 +369,3 @@ function actualizarPrediccion() {
   }, 120);
 }
 
-// ------------------------------------------------------------------ decisiones entre fases
-
-export function mostrarDecision(op) {
-  const d = op.decision;
-  if (!d) return;
-  const caja = $('decision');
-  const res = datos.reglas.combate.resultados.find((r) => r.clave === d.resultado);
-  const titulo = d.resultado === 'preparacion' ? 'Terminó la preparación' : `${FASES[d.fase]}: ${res?.nombre ?? ''}`;
-  const filas = [];
-  if (d.ventaja != null && d.ventaja > 0) filas.push(['Ventaja media', dec(d.ventaja)]);
-  if (d.defensores != null) filas.push(['Defensores en la provincia', `${d.defensores} brigada(s)`]);
-  filas.push(['Tus bajas', miles(d.bajasPropias)], ['Bajas enemigas', miles(d.bajasEnemigas)]);
-  if (d.reacciones) filas.push(['Reacción enemiga', `trae ${d.reacciones} brigada(s) de refuerzo`]);
-  if (d.aire) filas.push(['Aviación', d.aire]);
-  const hayReservas = op.reservas.length > 0;
-  const botones = [];
-  const cerrar = (eleccion) => { caja.hidden = true; if (eleccion) acc.decidir(op, eleccion); };
-  if (d.final || op.estado === 'terminada') botones.push(['Cerrar', null, 'principal']);
-  else if (d.siguiente === 'fin') botones.push(['Terminar la operación', 'seguir', 'principal']);
-  else {
-    const seguir = { ruptura: 'Seguir: ruptura', explotacion: 'Explotar con las tropas mecanizadas y blindadas', ruptura_siguiente: 'Seguir al próximo objetivo' }[d.siguiente];
-    botones.push([seguir, 'seguir', 'principal']);
-    if (hayReservas) botones.push([`Meter las reservas (${op.reservas.length}) y seguir`, 'reservas', '']);
-    botones.push([d.siguiente === 'explotacion' ? 'Quedarse acá' : 'Cortar la operación', 'cortar', 'peligro']);
-  }
-  caja.replaceChildren(h('div', { class: 'panel dialogo', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'decision-titulo' },
-    h('div', { class: 'rotulo' }, `Operación sobre ${datos.provincias[op.objetivos[0]].nombre} · ${d.provincia}`),
-    h('h2', { id: 'decision-titulo' }, titulo),
-    h('p', {}, d.texto),
-    h('dl', { class: 'datos' }, ...filas.flatMap(([k, v]) => [h('dt', {}, k), h('dd', {}, v)])),
-    h('div', { class: 'botones' }, ...botones.map(([t, e, cl]) => h('button', { type: 'button', class: `boton ${cl}`, onclick: () => cerrar(e) }, t))),
-  ));
-  caja.hidden = false;
-  caja.querySelector('.boton')?.focus();
-}
-
-// ------------------------------------------------------------------ registro de eventos
-
-function agregarMensaje({ texto, tono, pais }) {
-  const jugador = datos.escenario.pais_jugador;
-  if (pais && pais !== jugador) return;
-  const reg = $('registro');
-  const el = h('li', { class: tono }, h('span', { class: 'cuando' }, `${textoFecha()} · `), texto);
-  reg.append(el);
-  while (reg.children.length > 6) reg.firstElementChild.remove();
-  reg.hidden = false;
-}
-
-export function operacionesPendientes() {
-  return operaciones.lista.filter((o) => o.estado === 'decision' && o.pais === datos.escenario.pais_jugador);
-}

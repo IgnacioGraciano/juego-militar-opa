@@ -3,6 +3,7 @@
 
 import { datos, nombrePais } from './datos.js';
 import { $, h, filasDatos } from './dom.js';
+import { publicar } from './noticias.js';
 import { svgPictograma } from './simbolos.js';
 import { flotaPorId, totalBarcos, fijarMisionFlota, poderFlota, capacidadTransporte, marina } from './marina.js';
 import { elegirOpcionEvento, firmarPaz } from './diplomacia.js';
@@ -64,25 +65,15 @@ function descripcionClase(k) {
 
 // ------------------------------------------------------------------ diálogos
 
-export function dialogo({ rotulo, titulo, parrafos = [], filas = [], botones = [] }) {
-  const caja = $('decision');
-  const cerrar = () => { caja.hidden = true; };
-  caja.replaceChildren(h('div', { class: 'panel dialogo', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'dialogo-titulo' },
-    rotulo ? h('div', { class: 'rotulo' }, rotulo) : null,
-    h('h2', { id: 'dialogo-titulo' }, titulo),
-    ...parrafos.map((p) => h('p', {}, p)),
-    filas.length ? h('dl', { class: 'datos' }, ...filasDatos(filas)) : null,
-    h('div', { class: 'botones' }, ...(botones.length ? botones : [['Cerrar', null, 'principal']]).map(([t, f, cl]) => h('button', {
-      type: 'button', class: `boton ${cl ?? ''}`, onclick: () => { cerrar(); f?.(); acc.alCambiarPanel?.(); },
-    }, t)))));
-  caja.hidden = false;
-  caja.querySelector('.boton')?.focus();
+// Los diálogos importantes salen como noticia del diario (pausan el juego).
+export function dialogo({ rotulo, titulo, bajada, parrafos = [], filas = [], botones = [], tono }) {
+  publicar({ seccion: rotulo, titular: titulo, bajada, parrafos, filas, tono,
+    botones: botones.map(([t, f, cl]) => [t, () => { f?.(); acc.alCambiarPanel?.(); }, cl]) });
 }
 
 export function mostrarEvento(ev) {
-  acc.pausar?.();
   dialogo({
-    rotulo: `Evento · ${ev.fecha.split('-').reverse().join('/')}`,
+    rotulo: 'Política',
     titulo: ev.titulo,
     parrafos: [ev.texto],
     botones: ev.opciones.map((o, k) => [o.texto, () => elegirOpcionEvento(ev, k), k === 0 ? 'principal' : '']),
@@ -90,20 +81,20 @@ export function mostrarEvento(ev) {
 }
 
 export function mostrarMediacion({ a, b }) {
-  acc.pausar?.();
   dialogo({
-    rotulo: 'Mediación',
-    titulo: 'Ofrecen mediar en la guerra',
-    parrafos: [`Con la tensión mundial tan alta, un mediador (el Vaticano y la ONU) ofrece un alto el fuego entre ${nombrePais(a)} y ${nombrePais(b)}. Cada uno se quedaría con lo que tiene.`],
+    rotulo: 'Diplomacia',
+    titulo: 'El Vaticano y la ONU ofrecen mediar',
+    bajada: 'Proponen un alto el fuego inmediato.',
+    parrafos: [`Con la tensión mundial tan alta, los mediadores ofrecen un alto el fuego entre ${nombrePais(a)} y ${nombrePais(b)}. Cada uno se quedaría con lo que tiene.`],
     botones: [['Aceptar el alto el fuego', () => firmarPaz(a, b, 'alto_el_fuego'), 'principal'], ['Rechazar', null, '']],
   });
 }
 
 export function mostrarPropuestaPaz({ de, a, tipo }) {
-  acc.pausar?.();
   dialogo({
-    rotulo: 'Propuesta de paz',
+    rotulo: 'Diplomacia',
     titulo: `${nombrePais(de)} pide la paz`,
+    bajada: tipo === 'cesion' ? 'Ofrece ceder las provincias ocupadas.' : 'Propone un alto el fuego.',
     parrafos: [tipo === 'cesion'
       ? `${nombrePais(de)} está quebrado y ofrece la paz cediéndote las provincias que ocupaste.`
       : `${nombrePais(de)} ofrece un alto el fuego: cada uno se queda con lo que tiene.`],
@@ -112,7 +103,7 @@ export function mostrarPropuestaPaz({ de, a, tipo }) {
 }
 
 export function mostrarCombateNaval(r) {
-  dialogo({ rotulo: 'Combate naval', titulo: `Combate en ${r.zona}`, parrafos: r.lineas });
+  dialogo({ rotulo: 'Guerra en el mar', titulo: `Combate naval en ${r.zona}`, parrafos: r.lineas, tono: 'malo' });
 }
 
 // ------------------------------------------------------------------ menú de partida

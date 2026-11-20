@@ -414,10 +414,10 @@ export function actualizarHoraAviacion() {
       const otra = basesDe(e.pais)[0];
       if (otra) {
         e.base = otra.indice;
-        mensaje(`El ${e.nombre} se mudó a ${otra.nombre}: su base cayó.`, 'malo', e.pais);
+        mensaje(`El ${e.nombre} se mudó a ${otra.nombre}: su base cayó.`, 'malo', e.pais, 'aviso');
       } else {
         aviacion.escuadrones = aviacion.escuadrones.filter((x) => x !== e);
-        mensaje(`El ${e.nombre} se perdió: no quedan bases propias.`, 'malo', e.pais);
+        mensaje(`El ${e.nombre} se perdió: no quedan bases propias.`, 'malo', e.pais, 'aviso');
       }
     }
     if (e.aviones <= 0 && !e.ocupado) aviacion.escuadrones = aviacion.escuadrones.filter((x) => x !== e);

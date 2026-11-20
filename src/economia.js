@@ -231,7 +231,7 @@ function procesarContratos(e) {
       if (motivo && c.estado === 'activo') {
         c.estado = 'suspendido';
         c.motivo = motivo;
-        mensaje(`Se suspendió la compra de ${textoProducto(c)}: ${motivo}`, 'malo', c.pais);
+        mensaje(`Se suspendió la compra de ${textoProducto(c)}: ${motivo}`, 'malo', c.pais, 'aviso');
       } else if (!motivo && c.estado === 'suspendido') c.estado = 'activo';
     }
     if (c.estado !== 'activo') continue;

@@ -2,11 +2,11 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,600;1,500&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,600;1,500&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500&family=Playfair+Display:wght@700;900&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&display=swap">
 <style>
   /* Sala de mapas: tablero oscuro, paneles de chapa con filo de bronce, rótulos condensados.
      Barra superior única (país + reloj); paneles a la izquierda (país, provincia, tropas)
-     y a la derecha (planes); avisos abajo a la derecha. */
+     y a la derecha (planes); modos de mapa abajo a la derecha; noticias en el centro. */
   :root {
     --fondo: #22303d;
     --panel: rgba(13, 17, 23, 0.94);
@@ -171,11 +171,23 @@
   .indicador .rotulo { font-size: 10px; }
   .indicador b { font: 500 13.5px var(--f-dato); font-variant-numeric: tabular-nums; }
   .indicador.alerta b { color: var(--peligro-claro); }
+  .indicador.con-icono { display: flex; align-items: center; gap: 6px; padding: 3px 10px; }
+  .indicador.con-icono svg { width: 20px; height: 18px; fill: var(--bronce-claro); stroke: none; flex: none; }
+  .indicador.con-icono b { font-size: 14px; }
+  #globo { position: absolute; z-index: 20; max-width: 280px; padding: 8px 11px; font-size: 12.5px; line-height: 1.45; color: var(--texto); background: var(--panel-solido); border: 1px solid var(--borde-fuerte); border-radius: 5px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5); pointer-events: none; }
+  #globo b { display: block; font: 600 13px var(--f-rotulo); letter-spacing: 0.06em; text-transform: uppercase; color: var(--bronce-claro); margin-bottom: 3px; }
+  #globo .globo-fila { display: flex; justify-content: space-between; gap: 14px; color: var(--tenue); }
+  #globo .globo-fila span:last-child { color: var(--texto); font: 500 12px var(--f-dato); }
   .barra-guerra { display: flex; align-items: center; gap: 4px; padding-left: 10px; border-left: 1px solid var(--borde); white-space: nowrap; }
   .barra-guerra .rotulo { color: var(--peligro-claro); font-size: 10px; }
   .espaciador { flex: 1; }
   .barra-botones { display: flex; align-items: center; gap: 6px; }
-  .vistas button { padding: 5px 9px; font-size: 12px; }
+  #vistas { position: absolute; right: max(var(--margen), env(safe-area-inset-right, 0px)); bottom: calc(var(--margen) + env(safe-area-inset-bottom, 0px)); display: flex; gap: 4px; padding: 4px; z-index: 2; }
+  #vistas button { display: grid; place-items: center; width: 34px; height: 30px; padding: 0; color: var(--tenue); background: none; border: 1px solid transparent; border-radius: 4px; cursor: pointer; }
+  #vistas button:hover { color: var(--texto); border-color: var(--apagado); }
+  #vistas button[aria-pressed="true"] { color: #1a140a; background: var(--bronce); }
+  #vistas svg { width: 18px; height: 18px; fill: currentColor; }
+  #vistas button:focus-visible { outline: 2px solid var(--bronce-claro); outline-offset: 2px; }
 
   #reloj { display: flex; align-items: center; gap: 8px; padding-left: 12px; border-left: 1px solid var(--borde); height: 36px; }
   .reloj-texto { display: grid; line-height: 1.1; min-width: 118px; }
@@ -199,10 +211,30 @@
     gap: 2px;
     padding: 8px 10px;
   }
-  #lista-operaciones .op { display: flex; justify-content: space-between; gap: 8px; font: 500 12.5px var(--f-texto); text-align: left; color: var(--tenue); background: none; border: 0; padding: 4px 2px; cursor: pointer; border-radius: 3px; }
-  #lista-operaciones .op:hover { background: var(--superficie); }
-  #lista-operaciones .op b { color: var(--texto); font: 600 14px var(--f-rotulo); }
-  #lista-operaciones .op.espera { color: var(--bronce-claro); }
+  #lista-operaciones .op { display: flex; align-items: center; gap: 6px; }
+  #lista-operaciones .op-ir { flex: 1; min-width: 0; display: grid; grid-template-columns: auto 1fr; column-gap: 8px; align-items: baseline; font: 500 12.5px var(--f-texto); text-align: left; color: var(--tenue); background: none; border: 0; padding: 4px 4px; cursor: pointer; border-radius: 3px; }
+  #lista-operaciones .op-ir:hover { background: var(--superficie); }
+  #lista-operaciones .op-ir b { color: var(--texto); font: 600 14px var(--f-rotulo); }
+  #lista-operaciones .op-ir span { text-align: right; }
+  #lista-operaciones .op.combate .op-ir span { color: var(--peligro-claro); }
+  #lista-operaciones .barra-batalla { grid-column: 1 / -1; margin-top: 4px; }
+  .barra-batalla { display: block; height: 5px; background: var(--peligro); border-radius: 3px; overflow: hidden; }
+  .barra-batalla i { display: block; height: 100%; background: var(--bien); }
+  .batalla { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid rgba(200, 80, 60, 0.45); border-radius: 6px; background: rgba(200, 80, 60, 0.07); }
+  .batalla-titulo { display: flex; align-items: baseline; gap: 8px; }
+  .batalla-titulo b { font: 600 16px var(--f-rotulo); letter-spacing: 0.03em; }
+  .batalla-titulo small { margin-left: auto; color: var(--peligro-claro); font-size: 12px; }
+  .espadas { color: var(--peligro-claro); }
+  .lados { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .lado { display: grid; gap: 2px; min-width: 0; }
+  .lado small { color: var(--tenue); font-size: 11.5px; }
+  .batalla .boton { justify-self: start; }
+  .pronostico { display: flex; gap: 14px; align-items: center; margin-bottom: 8px; }
+  .pronostico > div { display: grid; }
+  .pronostico-cifra b { font: 500 30px var(--f-dato); line-height: 1; color: var(--texto); }
+  .pronostico small { color: var(--tenue); font-size: 12px; }
+  .pronostico > div:last-child b { font: 600 18px var(--f-rotulo); color: var(--bronce-claro); }
+  .medidor.grande { height: 8px; }
 
   #ayuda, #menu-partida {
     top: var(--debajo-barra);
@@ -313,15 +345,9 @@
   .objetivos { display: flex; flex-wrap: wrap; gap: 6px; }
   .objetivo { display: inline-flex; gap: 6px; align-items: center; padding: 3px 8px; border: 1px solid var(--bronce); border-radius: 4px; font: 600 14px var(--f-rotulo); }
   .artilleria { display: grid; gap: 4px; margin-top: 8px; font-size: 13px; }
-  .factores, .probabilidades { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13px; }
+  .factores { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13px; }
   .factores li { display: grid; grid-template-columns: 1fr 90px; column-gap: 10px; align-items: center; }
   .factores small { grid-column: 1 / -1; color: var(--tenue); font-size: 11.5px; }
-  .probabilidades li { display: grid; grid-template-columns: 110px 1fr 40px; gap: 8px; align-items: center; }
-  .probabilidades small { text-align: right; font: 500 12px var(--f-dato); }
-  .probabilidades .rechazo i { background: var(--peligro); }
-  .probabilidades .estancamiento i { background: #a8a190; }
-  .probabilidades .ruptura i { background: var(--bien); }
-  .probable { margin: 0 0 8px; font-size: 14px; }
   #plan-calidad { margin-left: auto; font-size: 22px; color: var(--texto); }
   .multiplicadores { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; font-size: 12.5px; }
   .multiplicadores > div > div:not(.rotulo) { display: flex; justify-content: space-between; gap: 6px; padding: 1px 0; color: var(--tenue); }
@@ -331,11 +357,47 @@
   .pegado { position: sticky; bottom: 0; background: var(--panel-solido); padding: 10px 0 12px; margin-top: 8px; }
 
   /* ---------------------------------------------------------------- avisos */
-  #decision { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center; background: rgba(5, 8, 12, 0.55); padding: 16px; }
-  .dialogo { position: relative; width: min(470px, 100%); padding: 20px 22px; }
-  .dialogo h2 { font-size: 28px; }
-  .dialogo p { margin: 0 0 10px; line-height: 1.5; }
-  .dialogo .botones { display: grid; gap: 8px; margin-top: 16px; }
+  /* Noticias: una página de diario en el centro de la pantalla */
+  #diario { position: absolute; inset: 0; z-index: 9; display: grid; place-items: center; background: rgba(5, 8, 12, 0.6); padding: 16px; overflow-y: auto; }
+  .diario {
+    --tinta: #1d1a15; --papel: #f1e9d4; --linea: #3a332a;
+    position: relative; width: min(560px, 100%); box-sizing: border-box; padding: 18px 26px 20px;
+    color: var(--tinta); background: var(--papel);
+    background-image: radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.35), transparent 60%), radial-gradient(ellipse at 80% 90%, rgba(120, 90, 40, 0.12), transparent 55%);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.25);
+    transform: rotate(-0.4deg); font-family: "Libre Caslon Text", Georgia, serif; color-scheme: light;
+    animation: llega-diario 0.35s ease-out;
+  }
+  @keyframes llega-diario { from { transform: rotate(-3deg) scale(0.92); opacity: 0; } to { transform: rotate(-0.4deg) scale(1); opacity: 1; } }
+  .diario-cabecera { text-align: center; border-bottom: 3px double var(--linea); padding-bottom: 6px; }
+  .diario-lema, .diario-fecha { display: flex; justify-content: space-between; gap: 8px; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .diario-nombre { font: 900 clamp(28px, 7vw, 44px)/1.05 "Playfair Display", Georgia, serif; letter-spacing: 0.01em; margin: 4px 0 6px; padding: 2px 0 6px; border-bottom: 1px solid var(--linea); }
+  .diario-fecha { padding-top: 2px; }
+  .diario-seccion { display: inline-block; margin-top: 12px; padding: 1px 8px; font: 700 11px "Libre Caslon Text", Georgia, serif; text-transform: uppercase; letter-spacing: 0.14em; color: var(--papel); background: var(--tinta); }
+  .diario.malo .diario-seccion { background: #8f2418; }
+  .diario-titular { margin: 8px 0 6px; font: 900 clamp(26px, 6vw, 38px)/1.04 "Playfair Display", Georgia, serif; text-wrap: balance; }
+  .diario-bajada { margin: 0 0 10px; font-style: italic; font-size: 15.5px; line-height: 1.35; border-bottom: 1px solid rgba(58, 51, 42, 0.4); padding-bottom: 10px; }
+  .diario-cuerpo p { margin: 0 0 8px; font-size: 14px; line-height: 1.55; text-align: justify; hyphens: auto; }
+  .diario-cuerpo p:first-child::first-letter { float: left; font: 900 46px/0.85 "Playfair Display", Georgia, serif; margin: 3px 4px 0 0; }
+  .diario-cuerpo.columnas { column-count: 2; column-gap: 22px; column-rule: 1px solid rgba(58, 51, 42, 0.35); }
+  @media (max-width: 520px) { .diario-cuerpo.columnas { column-count: 1; } }
+  .diario-datos { display: grid; grid-template-columns: auto 1fr; gap: 3px 14px; margin: 6px 0 0; font-size: 13px; border-top: 1px solid rgba(58, 51, 42, 0.4); padding-top: 8px; }
+  .diario-datos dt { font-weight: 700; }
+  .diario-datos dd { margin: 0; }
+  .diario-botones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; padding-top: 12px; border-top: 3px double var(--linea); }
+  .sello { font: 700 13px "Libre Caslon Text", Georgia, serif; text-transform: uppercase; letter-spacing: 0.08em; color: var(--tinta); background: transparent; border: 2px solid var(--tinta); border-radius: 2px; padding: 8px 14px; cursor: pointer; }
+  .sello.principal { color: var(--papel); background: var(--tinta); }
+  .sello:hover { background: rgba(29, 26, 21, 0.1); }
+  .sello.principal:hover { background: #3a332a; }
+  .sello:focus-visible { outline: 2px solid #8f2418; outline-offset: 2px; }
+  .diario-mas { position: absolute; right: 26px; bottom: -26px; font: 600 12px var(--f-rotulo); letter-spacing: 0.08em; text-transform: uppercase; color: var(--bronce-claro); }
+
+  /* Avisos breves: abajo al centro, se van solos */
+  #avisos { position: absolute; left: 50%; bottom: calc(var(--margen) + 40px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(460px, calc(100% - 2 * var(--margen))); margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; justify-items: center; pointer-events: none; z-index: 7; }
+  #avisos li { font-size: 13px; line-height: 1.4; padding: 6px 14px; background: var(--panel-solido); border: 1px solid var(--borde); border-left: 3px solid var(--bronce); border-radius: 4px; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4); transition: opacity 0.4s, transform 0.4s; }
+  #avisos li.bueno { border-left-color: var(--bien); }
+  #avisos li.malo { border-left-color: var(--peligro); }
+  #avisos li.fuera { opacity: 0; transform: translateY(6px); }
 
   #modo {
     position: absolute;
@@ -353,22 +415,6 @@
     white-space: nowrap;
     z-index: 4;
   }
-  #registro {
-    position: absolute;
-    right: max(var(--margen), env(safe-area-inset-right, 0px));
-    bottom: calc(var(--margen) + env(safe-area-inset-bottom, 0px));
-    width: min(370px, calc(100% - 2 * var(--margen)));
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    display: grid;
-    gap: 4px;
-    pointer-events: none;
-  }
-  #registro li { font-size: 12.5px; line-height: 1.4; padding: 6px 10px; background: var(--panel); border-left: 3px solid var(--apagado); border-radius: 4px; }
-  #registro li.bueno { border-left-color: var(--bien); }
-  #registro li.malo { border-left-color: var(--peligro); }
-  #registro .cuando { color: var(--tenue); font: 500 10.5px var(--f-dato); }
   #cursor {
     position: absolute;
     left: 50%;
@@ -387,8 +433,8 @@
 
   /* Paneles que se tapan entre sí */
   #juego:has(#pais:not([hidden])) :is(#ficha, #tropas, #escuadron, #flota) { display: none; }
-  #juego:has(#paquete:not([hidden])) :is(#registro, #plan) { display: none; }
-  #juego:has(#plan:not([hidden])) #registro { display: none; }
+  #juego:has(#paquete:not([hidden])) #plan { display: none; }
+  #juego:has(:is(#ficha, #tropas, #escuadron, #flota, #pais, #plan, #paquete):not([hidden])) #vistas { display: none; }
   #juego:has(:is(#plan, #paquete):not([hidden])) #lista-operaciones { display: none; }
 
   @media (max-width: 1180px) {
@@ -403,12 +449,13 @@
     #reloj { order: 4; border-left: 0; padding-left: 0; }
     #barra { flex-wrap: wrap; height: auto; min-height: var(--alto-barra); padding: 6px 8px; row-gap: 4px; }
     .indicadores { order: 5; width: 100%; }
-    .barra-guerra, .vistas { display: none; }
+    .barra-guerra { display: none; }
     #reloj { margin-left: auto; padding-left: 8px; }
     #ayuda-raton { display: none; }
     #ayuda-tactil { display: block; }
     #plan, #paquete { top: 32vh; }
-    #registro, #cursor { display: none; }
+    #cursor { display: none; }
+    #avisos { bottom: calc(var(--margen) + 46px + env(safe-area-inset-bottom, 0px)); }
   }
   @media (max-width: 760px) and (pointer: fine) { #ayuda-raton { display: block; } #ayuda-tactil { display: none; } }
   @media (hover: none) { #cursor { display: none; } }
@@ -424,10 +471,6 @@
     <div id="barra-guerra" class="barra-guerra" hidden></div>
     <div class="espaciador"></div>
     <div class="barra-botones">
-      <div class="segmentado vistas" role="group" aria-label="Vista del mapa">
-        <button type="button" data-vista="politica" aria-pressed="true">Política</button>
-        <button type="button" data-vista="suministro" aria-pressed="false">Suministro</button>
-      </div>
       <button id="boton-partida" type="button" class="mini" aria-expanded="false" aria-controls="menu-partida">Partida</button>
       <button id="boton-ayuda" type="button" class="mini" aria-expanded="false" aria-controls="ayuda">Ayuda</button>
     </div>
@@ -445,6 +488,15 @@
   </header>
 
   <div id="lista-operaciones" class="panel" hidden></div>
+
+  <div id="vistas" class="panel vistas" role="group" aria-label="Vista del mapa">
+    <button type="button" data-vista="politica" aria-pressed="true" title="Mapa político (V)" aria-label="Mapa político">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2h2v20H4zM7 3.5c3-1.6 5.5 1.4 9 0 1.3-.5 2.6-.6 4-.3v9.6c-1.4-.3-2.7-.2-4 .3-3.5 1.4-6-1.6-9 0z"/></svg>
+    </button>
+    <button type="button" data-vista="suministro" aria-pressed="false" title="Mapa de suministro (V)" aria-label="Mapa de suministro">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.5l9.5 4.6v11.8L12 22.5l-9.5-4.6V6.1zM5.3 6.6L12 9.9l6.7-3.3L12 3.4zM4.5 8.2v8.5l6.5 3.2v-8.5zM13 19.9l6.5-3.2V8.2L13 11.4zM15.5 12.3l2.5-1.2v2.7l-2.5 1.2z"/></svg>
+    </button>
+  </div>
 
   <div id="ayuda" class="panel" hidden>
     <div class="rotulo" id="escenario">Escenario</div>
@@ -537,7 +589,7 @@
     <section>
       <h3>1 · Objetivo</h3>
       <div id="plan-objetivos" class="objetivos"></div>
-      <p class="nota">Clic en provincias enemigas para sumar objetivos para la explotación.</p>
+      <p class="nota">Clic en provincias enemigas vecinas para sumar objetivos: al tomar uno, las tropas siguen solas al próximo si llega el suministro.</p>
     </section>
     <section>
       <h3><label for="plan-eje">2 · Eje principal</label></h3>
@@ -554,10 +606,10 @@
     <section>
       <h3><label for="plan-dias">5 · Preparación</label> <span id="plan-dias-valor" class="tenue"></span></h3>
       <input id="plan-dias" type="range" min="0" max="30" step="1">
-      <p class="nota">Más días dan más fuerza (reconocimiento, artillería en posición) pero el enemigo puede detectar la concentración.</p>
+      <p class="nota">Más días dan más fuerza (reconocimiento, artillería en posición) pero el enemigo puede detectar la concentración. Después el combate es continuo: sigue hasta que un lado se quiebra.</p>
       <div class="artilleria">
-        <label><input id="plan-art-preparacion" type="checkbox"> Artillería en la preparación</label>
-        <label><input id="plan-art-ruptura" type="checkbox"> Artillería en la ruptura</label>
+        <label><input id="plan-art-preparacion" type="checkbox"> Bombardeo de artillería antes del asalto (12 h)</label>
+        <label><input id="plan-art-ruptura" type="checkbox"> Apoyo de artillería durante el combate</label>
       </div>
     </section>
     <section>
@@ -579,8 +631,9 @@
   </aside>
 
   <div id="modo" hidden></div>
-  <ol id="registro" hidden aria-live="polite"></ol>
-  <div id="decision" hidden></div>
+  <ol id="avisos" aria-live="polite"></ol>
+  <div id="diario" hidden></div>
+  <div id="globo" hidden></div>
 
   <div id="cursor" hidden></div>
   <div id="carga">Cargando el mapa…</div>

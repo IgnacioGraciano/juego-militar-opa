@@ -58,17 +58,20 @@ export function dibujarUnidades(ctx, camara, vista) {
   // Flechas de las Operaciones en curso
   for (const op of operaciones.lista) {
     if (op.pais !== jugador || op.estado === 'terminada') continue;
-    const desde = op.fase === 'explotacion' ? op.ejeExplotacion : op.eje;
+    const desde = op.eje;
     const hasta = op.objetivos[op.objetivoActual];
     if (desde == null || desde < 0 || hasta == null) continue;
     const etiqueta = op.estado === 'reuniendo' ? 'Reuniendo tropas'
-      : op.estado === 'preparando' ? `Preparación: ${Math.ceil(op.horasPreparacion / 24)} d`
-        : op.estado === 'decision' ? 'Esperando orden' : op.fase === 'preparacion' ? 'Bombardeo' : op.fase === 'ruptura' ? 'Ruptura' : 'Explotación';
+      : op.estado === 'preparando' ? `Preparación: ${Math.ceil(op.horasPreparacion / 24)} d` : null;
     flecha(ctx, centroPantalla(camara, desde), centroPantalla(camara, hasta), {
-      color: op.estado === 'fase' ? 'rgba(214, 72, 52, 0.95)' : BRONCE,
+      color: op.estado === 'combate' ? 'rgba(214, 72, 52, 0.95)' : BRONCE,
       discontinua: op.estado === 'reuniendo' || op.estado === 'preparando',
       etiqueta,
     });
+    // Los objetivos que siguen, en punteado.
+    for (let k = op.objetivoActual + 1; k < op.objetivos.length; k++) {
+      flecha(ctx, centroPantalla(camara, op.objetivos[k - 1]), centroPantalla(camara, op.objetivos[k]), { color: 'rgba(226, 196, 120, 0.6)', discontinua: true });
+    }
   }
 
   // Plan que se está armando
@@ -137,7 +140,64 @@ export function dibujarUnidades(ctx, camara, vista) {
       ctx.setLineDash([]);
     }
   }
+
+  // Batallas en curso donde participa el jugador: ícono con la barra de quién va ganando.
+  for (const op of operaciones.lista) {
+    if (op.estado !== 'combate') continue;
+    const obj = op.objetivos[op.objetivoActual];
+    const propia = op.pais === jugador;
+    if (!propia && datos.duenos[obj] !== jugador && !enGuerra(jugador, op.pais)) continue;
+    if (op.eje == null || op.eje < 0) continue;
+    const a = centroPantalla(camara, op.eje);
+    const b = centroPantalla(camara, obj);
+    const balance = propia || datos.duenos[obj] !== jugador ? op.balance : 1 - op.balance;
+    dibujarBatalla(ctx, { x: a.x + (b.x - a.x) * 0.62, y: a.y + (b.y - a.y) * 0.62 }, op, balance, obj);
+  }
   ctx.restore();
+}
+
+// Ícono de batalla: dos espadas cruzadas y una barra (verde = lado propio, rojo = enemigo).
+function dibujarBatalla(ctx, c, op, balance, prov) {
+  const w = 46;
+  const x = Math.round(c.x - w / 2);
+  const y = Math.round(c.y - 16);
+  fichas.push({ x, y, w, h: 34, batalla: prov, pais: op.pais });
+  ctx.fillStyle = 'rgba(12, 14, 18, 0.88)';
+  ctx.strokeStyle = 'rgba(214, 72, 52, 0.95)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, 32, 5);
+  ctx.fill();
+  ctx.stroke();
+  // Espadas
+  const cx = c.x;
+  const cy = y + 12;
+  ctx.strokeStyle = '#efe6cf';
+  ctx.lineCap = 'round';
+  ctx.lineWidth = 2;
+  for (const s of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(cx - 7 * s, cy - 7);
+    ctx.lineTo(cx + 6 * s, cy + 6);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + 2 * s, cy + 6);
+    ctx.lineTo(cx + 7 * s, cy + 1);
+    ctx.stroke();
+  }
+  // Barra
+  const bx = x + 4;
+  const by = y + 24;
+  const bw = w - 8;
+  if (op.horasBombardeo > 0) {
+    ctx.fillStyle = 'rgba(226, 196, 120, 0.9)';
+    ctx.fillRect(bx, by, bw * (1 - op.horasBombardeo / datos.reglas.combate.bombardeo.horas), 4);
+    return;
+  }
+  ctx.fillStyle = 'rgb(200, 70, 55)';
+  ctx.fillRect(bx, by, bw, 4);
+  ctx.fillStyle = 'rgb(110, 190, 100)';
+  ctx.fillRect(bx, by, bw * balance, 4);
 }
 
 // Posiciones en pantalla de las brigadas propias (para la selección con caja).

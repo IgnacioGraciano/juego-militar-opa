@@ -3,7 +3,7 @@
 // provincia, con doble clic en el mapa o con la lista del panel.
 
 import { datos, nombrePais } from './datos.js';
-import { $, h, miles, dec, pct, plata, chipPais, iconoUnidad, medidor, filasDatos } from './dom.js';
+import { $, h, miles, dec, pct, plata, chipPais, iconoUnidad, medidor, filasDatos, conGlobo } from './dom.js';
 import { svgPictograma, svgSilueta } from './simbolos.js';
 import {
   ejercito, tipos, enGuerra, enemigosDe, leyDe, horasRestantes, relevarGeneral, datoHistorico, anioEscenario, mensaje, avisar,
@@ -12,7 +12,7 @@ import {
   economia, economiaDe, poblacion, capacidad, cotizar, firmarContrato, cancelarContrato, textoProducto,
   fijarImpuestos, fijarGastoMilitar, invertir, costoInversion, factorRepuestos, consumoRepuestos, nombreProveedor, embargo,
 } from './economia.js';
-import { aviacion, escuadronesDe, modelo, disponibles, basesDe, fijarMision, avionesDe } from './aviacion.js';
+import { aviacion, escuadronesDe, modelo, disponibles, basesDe, fijarMision, avionesDe, ROLES } from './aviacion.js';
 import { iconoAvion, barrasAvion, etiquetasAvion } from './panel_aereo.js';
 import { depositosDe, describirDeposito, quitarDeposito, capitalDe, suministroEn, zona, NOMBRE_ZONA } from './suministro.js';
 import { marina, flotasDe, totalBarcos, barcosDe, fijarMisionFlota } from './marina.js';
@@ -60,23 +60,77 @@ export function iniciarPanelPais(acciones) {
 
 // ------------------------------------------------------------------ barra superior
 
+const ICONO_GENTE = 'M8 3.5a3.2 3.2 0 1 1 0 6.4 3.2 3.2 0 0 1 0-6.4zM1.5 21v-3.2c0-3.3 3-5.6 6.5-5.6s6.5 2.3 6.5 5.6V21zM16.8 4.8a2.7 2.7 0 1 1 0 5.4 2.7 2.7 0 0 1 0-5.4zM16 12.4c3.6-.5 6.5 1.6 6.5 4.8V21h-6.2v-3.2c0-2-.1-3.8-.3-5.4z';
+
+function iconoSvg(d) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  const p = document.createElementNS(ns, 'path');
+  p.setAttribute('d', d);
+  svg.append(p);
+  return svg;
+}
+
+const cuenta = (lista, clave) => lista.reduce((m, x) => m.set(clave(x), (m.get(clave(x)) ?? 0) + (x.n ?? 1)), new Map());
+
+// Detalle de cada indicador (globo al pasar el mouse).
+const DETALLE = {
+  mano: (j) => {
+    const ley = leyDe(j);
+    const pob = (datoHistorico(j, anioEscenario(), 'poblacion') ?? 1000) * 1000;
+    return { titulo: 'Mano de obra', filas: [['Disponible', miles(ejercito.manoDeObra[j] ?? 0)], ['Ley', ley.nombre], ['Entran por día', miles((pob * ley.por_anio) / 365)]],
+      nota: 'Hombres para reclutar brigadas nuevas y reponer bajas.' };
+  },
+  brigadas: (j) => {
+    const bs = ejercito.brigadas.filter((b) => b.pais === j);
+    const porTipo = cuenta(bs, (b) => b.tipo);
+    return { titulo: 'Ejército de tierra', filas: [
+      ...Object.entries(tipos()).map(([k, t]) => porTipo.get(k) ? [t.nombre, String(porTipo.get(k))] : null),
+      ['Hombres', miles(bs.reduce((s, b) => s + b.efectivos, 0))],
+      bs.some((b) => b.formacion) ? ['En formación', String(bs.filter((b) => b.formacion).length)] : null,
+      bs.some((b) => b.operacion) ? ['En operaciones', String(bs.filter((b) => b.operacion).length)] : null,
+    ] };
+  },
+  aviones: (j) => {
+    const es = escuadronesDe(j);
+    const porRol = cuenta(es.map((e) => ({ rol: modelo(e.modelo).rol, n: e.aviones })), (x) => x.rol);
+    return { titulo: 'Fuerza aérea', filas: [
+      ...[...porRol].map(([rol, n]) => [ROLES[rol] ?? rol, String(n)]),
+      ['Escuadrones', String(es.length)],
+      ['Listos para volar', String(es.reduce((s, e) => s + disponibles(e), 0))],
+    ] };
+  },
+  barcos: (j) => {
+    const fs = flotasDe(j);
+    const porClase = new Map();
+    for (const f of fs) for (const [k, n] of Object.entries(f.barcos)) if (n) porClase.set(k, (porClase.get(k) ?? 0) + n);
+    return { titulo: 'Marina', filas: [...[...porClase].map(([k, n]) => [datos.barcos.clases[k]?.nombre ?? k, String(n)]), ['Flotas', String(fs.length)]] };
+  },
+};
+
 export function actualizarBarra() {
   const j = jugador();
   const e = economiaDe(j);
   const brigadas = ejercito.brigadas.filter((b) => b.pais === j);
+  // [pestaña, ícono o rótulo, valor, detalle, alerta]
   const indicadores = [
-    ['ejercito', 'Mano de obra', miles(ejercito.manoDeObra[j] ?? 0), leyDe(j).nombre],
-    ['ejercito', 'Brigadas', String(brigadas.length), `${miles(brigadas.reduce((s, b) => s + b.efectivos, 0))} hombres`],
-    ['aviacion', 'Aviones', String(avionesDe(j)), `${escuadronesDe(j).length} escuadrones`],
-    ['marina', 'Barcos', String(barcosDe(j)), `${flotasDe(j).length} flotas`],
-    e && ['economia', 'Fondos', plata(e.fondosMilitares), `Fondos militares. Gasto militar ${dec(e.gastoMilitar * 100, 1)} % del PBI`],
-    e && ['economia', 'Divisas', plata(e.divisas), 'Para compras en el exterior'],
-    e && ['resumen', 'Estabilidad', `${Math.round(e.estabilidad)} %`, 'Baja con impuestos altos, gasto militar alto, guerra y bajas', e.estabilidad < 35],
-    ['diplomacia', 'Tensión', `${Math.round(diplomacia.tension)} %`, 'Tensión mundial: sube con justificaciones y guerras', diplomacia.tension > 60],
+    ['ejercito', iconoSvg(ICONO_GENTE), miles(ejercito.manoDeObra[j] ?? 0), DETALLE.mano],
+    ['ejercito', svgPictograma('infanteria'), String(brigadas.length), DETALLE.brigadas],
+    ['ejercito', svgPictograma('avion'), String(avionesDe(j)), DETALLE.aviones],
+    ['ejercito', svgPictograma('barco'), String(barcosDe(j)), DETALLE.barcos],
+    e && ['economia', 'Fondos', plata(e.fondosMilitares), () => ({ titulo: 'Fondos militares', filas: [['Disponibles', plata(e.fondosMilitares)], ['Gasto militar', `${dec(e.gastoMilitar * 100, 1)} % del PBI`]], nota: 'Pagan contratos, inversiones y reconversiones.' })],
+    e && ['resumen', 'Estabilidad', `${Math.round(e.estabilidad)} %`, () => ({ titulo: 'Estabilidad', nota: 'Baja con impuestos altos, gasto militar alto, guerra y bajas.' }), e.estabilidad < 35],
+    ['diplomacia', 'Tensión', `${Math.round(diplomacia.tension)} %`, () => ({ titulo: 'Tensión mundial', nota: 'Sube con justificaciones y guerras. Muy alta, trae mediaciones.' }), diplomacia.tension > 60],
   ].filter(Boolean);
-  $('indicadores').replaceChildren(...indicadores.map(([pestana, nombre, valor, ayuda, alerta]) => h('button', {
-    type: 'button', class: `indicador${alerta ? ' alerta' : ''}`, title: ayuda, onclick: () => abrirPais(j, pestana),
-  }, h('span', { class: 'rotulo' }, nombre), h('b', {}, valor))));
+  $('indicadores').replaceChildren(...indicadores.map(([pestana, rotulo, valor, detalle, alerta]) => {
+    const icono = typeof rotulo !== 'string';
+    return conGlobo(h('button', {
+      type: 'button', class: `indicador${icono ? ' con-icono' : ''}${alerta ? ' alerta' : ''}`, 'aria-label': icono ? detalle(j).titulo : null,
+      onclick: () => abrirPais(j, pestana),
+    }, icono ? rotulo : h('span', { class: 'rotulo' }, rotulo), h('b', {}, valor)), () => detalle(j));
+  }));
   const enemigos = enemigosDe(j);
   $('barra-guerra').hidden = !enemigos.length;
   $('barra-guerra').replaceChildren(h('span', { class: 'rotulo' }, 'En guerra'), ...enemigos.map((p) => chipPais(p, () => abrirPais(p, 'resumen'))));
@@ -172,7 +226,7 @@ function pestanaResumen(pais) {
 function accionesDiplomaticas(pais) {
   const j = jugador();
   const caja = h('section', {}, h('h3', {}, 'Guerra y paz'));
-  const err = (e) => { if (e) mensaje(e, 'malo', j); repintar(); acc.alCambiarPanel?.(); };
+  const err = (e) => { if (e) mensaje(e, 'malo', j, 'aviso'); repintar(); acc.alCambiarPanel?.(); };
   if (enGuerra(j, pais)) {
     const puntaje = puntajeGuerra(j, pais);
     caja.append(datosDl([['Marcha de la guerra', puntaje > 0 ? 'A tu favor' : puntaje < 0 ? 'En contra' : 'Pareja'], ['Su voluntad', `${Math.round(voluntad(pais))} %`]]));
@@ -221,7 +275,7 @@ function pestanaEjercito(pais) {
   ]));
   if (propio) {
     out.push(h('label', { class: 'campo' }, h('span', {}, 'Ley de reclutamiento'),
-      h('select', { onchange: (ev) => { datos.escenario.reclutamiento[pais] = ev.target.value; mensaje(`Nueva ley: ${leyes[ev.target.value].nombre.toLowerCase()}.`, 'info', pais); avisar('cambio'); repintar(); } },
+      h('select', { onchange: (ev) => { datos.escenario.reclutamiento[pais] = ev.target.value; mensaje(`Nueva ley: ${leyes[ev.target.value].nombre.toLowerCase()}.`, 'info', pais, 'aviso'); avisar('cambio'); repintar(); } },
         ...['servicio_militar', 'voluntarios'].map((k) => h('option', { value: k, selected: k === ley.clave }, leyes[k].nombre)))));
     out.push(h('p', { class: 'nota' }, 'Cada brigada nueva usa mano de obra y equipo (infantería y montaña 1 juego, mecanizada 3, blindada 4). Se recluta desde la ficha de una provincia propia.'));
   }
@@ -343,7 +397,7 @@ function pestanaEconomia(pais) {
       h('small', {}, s.texto),
       propio ? (inv
         ? h('small', { class: 'tenue' }, `Inversión en marcha: ${Math.ceil(inv.dias / 30)} meses`)
-        : h('button', { type: 'button', class: 'mini', disabled: e.sectores[clave] >= 10, title: 'Sube un nivel en 2 años', onclick: () => { const err = invertir(pais, clave); if (err) mensaje(err, 'malo', pais); repintar(); } }, `Invertir ${plata(costo)}`)) : null);
+        : h('button', { type: 'button', class: 'mini', disabled: e.sectores[clave] >= 10, title: 'Sube un nivel en 2 años', onclick: () => { const err = invertir(pais, clave); if (err) mensaje(err, 'malo', pais, 'aviso'); repintar(); } }, `Invertir ${plata(costo)}`)) : null);
   }))));
   const consumo = consumoRepuestos(pais);
   out.push(seccion('Depósito', tarjetas([
@@ -395,7 +449,7 @@ function formularioContrato(pais) {
     h('button', { type: 'button', class: 'boton principal', disabled: !!q.error, onclick: () => {
       if (pedido.producto === 'avion' && pedido.base == null) pedido.base = basesDe(pais)[0]?.indice ?? null;
       const err = firmarContrato(pais, pedido);
-      if (err) mensaje(err, 'malo', pais);
+      if (err) mensaje(err, 'malo', pais, 'aviso');
       repintar();
     } }, 'Firmar contrato'),
   );
@@ -475,7 +529,7 @@ function pestanaDecisiones(pais) {
         h('b', {}, n.nombre),
         h('small', {}, n.texto),
         curso ? h('div', {}, medidor(1 - curso.horas / curso.total), h('small', {}, `Faltan ${Math.ceil(curso.horas / 24)} días`)) : null,
-        estado === 'disponible' ? h('button', { type: 'button', class: 'mini', disabled: !!enCurso, title: enCurso ? 'Ya hay una decisión en curso en esta rama' : '', onclick: () => { const e = empezarNodo(n.id); if (e) mensaje(e, 'malo', pais); repintar(); } }, `Empezar · ${n.dias} días`) : null,
+        estado === 'disponible' ? h('button', { type: 'button', class: 'mini', disabled: !!enCurso, title: enCurso ? 'Ya hay una decisión en curso en esta rama' : '', onclick: () => { const e = empezarNodo(n.id); if (e) mensaje(e, 'malo', pais, 'aviso'); repintar(); } }, `Empezar · ${n.dias} días`) : null,
         estado === 'hecho' ? h('small', { class: 'tenue' }, 'Hecho') : null,
         estado === 'bloqueado' ? h('small', { class: 'tenue' }, n.requiere?.length ? `Requiere: ${n.requiere.map((id) => arbol.nodos.find((x) => x.id === id)?.nombre).join(', ')}` : 'Cerrado por otra decisión') : null);
     }))));
@@ -523,7 +577,7 @@ function disenoAvion(pais) {
     h('label', {}, 'Nombre del diseño', h('input', { type: 'text', value: diseno.nombre, placeholder: `${base.nombre} modernizado`, oninput: (ev) => { diseno.nombre = ev.target.value; } })),
     h('button', { type: 'button', class: 'boton principal', disabled: puntos > disponiblesPts || errores.length > 0, onclick: () => {
       const err = crearDisenoAvion(pais, diseno.base, diseno.nombre || `${base.nombre} modernizado`, diseno);
-      if (err) mensaje(err, 'malo', pais);
+      if (err) mensaje(err, 'malo', pais, 'aviso');
       else diseno = { tipo: 'avion', base: diseno.base, nombre: '', motor: 'original', agregados: {} };
       repintar();
     } }, 'Crear el diseño')));
@@ -535,7 +589,7 @@ function disenoAvion(pais) {
       return h('li', {},
         h('span', { class: 'icono-avion', style: `--pais:${datos.paises[pais].color}` }, svgSilueta(modelo(d.clave).silueta)),
         h('div', { class: 'tropa' }, h('div', { class: 'tropa-nombre' }, d.nombre), h('div', { class: 'tropa-datos' }, `Sobre el ${datos.aviones.modelos[d.base].nombre} · ${plata(modelo(d.clave).costo)} c/u`),
-          cand.length ? h('div', { class: 'fila-controles' }, ...cand.map((e) => h('button', { type: 'button', class: 'mini', title: `${plata(costoReconversion(e, d.clave))} · ${datos.reglas.disenador.dias_reconversion} días`, onclick: () => { const err = reconvertir(e, d.clave); if (err) mensaje(err, 'malo', pais); repintar(); } }, `Reconvertir ${e.nombre.split('·')[0].trim()}`))) : null));
+          cand.length ? h('div', { class: 'fila-controles' }, ...cand.map((e) => h('button', { type: 'button', class: 'mini', title: `${plata(costoReconversion(e, d.clave))} · ${datos.reglas.disenador.dias_reconversion} días`, onclick: () => { const err = reconvertir(e, d.clave); if (err) mensaje(err, 'malo', pais, 'aviso'); repintar(); } }, `Reconvertir ${e.nombre.split('·')[0].trim()}`))) : null));
     }))));
   }
   return out;
@@ -574,7 +628,7 @@ function disenoTanque(pais) {
     h('label', {}, 'Nombre del diseño', h('input', { type: 'text', value: diseno.nombre, placeholder: `${base.nombre} mejorado`, oninput: (ev) => { diseno.nombre = ev.target.value; } })),
     h('button', { type: 'button', class: 'boton principal', disabled: puntos > disponiblesPts || !puntos, onclick: () => {
       const err = crearDisenoTanque(pais, diseno.base, diseno.nombre || `${base.nombre} mejorado`, diseno);
-      if (err) mensaje(err, 'malo', pais);
+      if (err) mensaje(err, 'malo', pais, 'aviso');
       else diseno = { tipo: 'tanque', base: diseno.base, nombre: '', agregados: {} };
       repintar();
     } }, 'Crear el diseño')));

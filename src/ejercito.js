@@ -37,9 +37,11 @@ export function avisar(tipo, detalle) {
   ejercito.eventos.dispatchEvent(new CustomEvent(tipo, { detail: detalle }));
 }
 
-// Mensaje para el registro de la pantalla. tono: 'info', 'bueno' o 'malo'.
-export function mensaje(texto, tono = 'info', pais = null) {
-  avisar('mensaje', { texto, tono, pais });
+// Mensaje del juego. tono: 'info', 'bueno' o 'malo'. pais: a quién le importa (null = a todos).
+// importancia: null (no se muestra), 'aviso' (renglón breve abajo) o un objeto con
+// {titular, seccion, bajada} para una noticia del diario, que pausa el juego.
+export function mensaje(texto, tono = 'info', pais = null, importancia = null) {
+  avisar('mensaje', { texto, tono, pais, importancia });
 }
 
 // Generador de números al azar con semilla (mismo escenario = mismos ejércitos).
@@ -97,7 +99,16 @@ export function enemigosDe(pais) {
 export function declararGuerra(a, b) {
   if (enGuerra(a, b) || a === b) return;
   ejercito.guerras.add(claveGuerra(a, b));
-  mensaje(`${nombrePais(a)} le declara la guerra a ${nombrePais(b)}.`, 'malo');
+  const j = datos.escenario.pais_jugador;
+  const nos = a === j || b === j;
+  mensaje(nos
+    ? `${a === j ? 'El gobierno nacional' : `El gobierno de ${nombrePais(a)}`} declaró formalmente la guerra${b === j ? ' a nuestro país' : ` a ${nombrePais(b)}`}. Las fuerzas armadas están en estado de alerta máxima y se movilizan hacia las fronteras.`
+    : `${nombrePais(a)} declaró la guerra a ${nombrePais(b)}. Las cancillerías de la región siguen la situación con preocupación.`,
+  'malo', null, {
+    seccion: nos ? 'Última hora' : 'Internacionales',
+    titular: nos ? (a === j ? `¡Guerra! ${nombrePais(j)} le declara la guerra a ${nombrePais(b)}` : `¡Guerra! ${nombrePais(a)} nos declara la guerra`) : `${nombrePais(a)} y ${nombrePais(b)}, en guerra`,
+    bajada: nos ? 'Movilización general en todo el país.' : 'Crece la tensión en el continente.',
+  });
   avisar('cambio');
 }
 
@@ -412,7 +423,7 @@ function moverUnaHora(b) {
   if (b.mov.recorrido < c.km) return;
   if (enemigosEn(b.pais, sig).length) {
     b.mov = null;
-    mensaje(`${b.nombre} se frenó: hay tropas enemigas en ${datos.provincias[sig].nombre}.`, 'malo', b.pais);
+    mensaje(`${b.nombre} se frenó: hay tropas enemigas en ${datos.provincias[sig].nombre}.`, 'malo', b.pais, 'aviso');
     return;
   }
   b.provincia = sig;
@@ -429,7 +440,10 @@ export function ocupar(provincia, pais) {
   const antes = datos.duenos[provincia];
   cambiarDueno(provincia, pais);
   const p = datos.provincias[provincia];
-  mensaje(`${nombrePais(pais)} ocupa ${p.nombre} (antes de ${nombrePais(antes)}).`, pais === datos.escenario.pais_jugador ? 'bueno' : 'malo');
+  const j = datos.escenario.pais_jugador;
+  if (antes === j && p.pais === j) mensaje(`${nombrePais(pais)} ocupa ${p.nombre}.`, 'malo', j, { perdida: provincia, quien: pais });
+  else if (antes === j) mensaje(`Se perdió ${p.nombre}.`, 'malo', j, 'aviso');
+  else if (pais === j) mensaje(`Tus tropas ocupan ${p.nombre}.`, 'bueno', j, 'aviso');
 }
 
 // Saca a las brigadas de una provincia hacia una vecina propia. Devuelve las destruidas.
@@ -482,7 +496,7 @@ export function ganarExperiencia(cuerpoId) {
     mensaje(`${g.nombre} sube a experiencia ${g.experiencia}.`, 'bueno', c.pais);
   }
   if (Math.random() < R().generales.probabilidad_muerte_por_fase) {
-    mensaje(`Murió en combate el ${g.nombre}. Lo reemplaza un oficial con menos experiencia.`, 'malo', c.pais);
+    mensaje(`Murió en combate el ${g.nombre}. Lo reemplaza un oficial con menos experiencia.`, 'malo', c.pais, 'aviso');
     relevarGeneral(c, false);
   }
 }

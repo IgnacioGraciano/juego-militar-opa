@@ -1,7 +1,7 @@
 // IA (paso 11, primera versión: nivel Medio). Juego razonable que cuesta, sin ser injusto.
 // Sigue las mismas reglas que el jugador: no ataca sin justificación.
 //   En guerra: reparte tropas en las fronteras amenazadas, arma Operaciones donde tiene
-//   ventaja, decide entre fases, usa la aviación y patrulla con sus flotas.
+//   ventaja, usa la aviación y patrulla con sus flotas.
 //   Siempre: recluta si tiene mano de obra y equipo, pide equipo por contrato.
 //   Paz: acepta o propone según su voluntad nacional.
 
@@ -9,7 +9,7 @@ import { datos } from './datos.js';
 import {
   ejercito, enemigosDe, enemigosEn, ordenarMovimiento, reclutar, puedeReclutar, tipos,
 } from './ejercito.js';
-import { operaciones, planInicial, lanzarOperacion, decidir, ejesPosibles, predecir } from './operaciones.js';
+import { operaciones, planInicial, lanzarOperacion, ejesPosibles, predecir } from './operaciones.js';
 import { economia, economiaDe, firmarContrato } from './economia.js';
 import { escuadronesDe, planPaquete, lanzarPaquete, disponibles } from './aviacion.js';
 import { voluntad, aceptaPaz, firmarPaz } from './diplomacia.js';
@@ -23,22 +23,6 @@ const paisesIA = () => [...new Set(datos.duenos)].filter((p) => p !== jugador())
 
 // Poder aproximado de un grupo de brigadas (para comparar).
 const poder = (lista) => lista.reduce((s, b) => s + (b.efectivos / 4000) * b.organizacion * (tipos()[b.tipo].defensa + tipos()[b.tipo].ataque) / 2, 0);
-
-// ------------------------------------------------------------------ decisiones entre fases
-
-// La IA decide sola cuando una de sus operaciones termina una fase.
-export function decidirIA(op) {
-  const d = op.decision;
-  if (!d) return;
-  if (d.final || op.estado === 'terminada') return;
-  const fuerzas = op.fuerzas.map((id) => ejercito.brigadas.find((b) => b.id === id)).filter(Boolean);
-  const org = fuerzas.length ? fuerzas.reduce((s, b) => s + b.organizacion, 0) / fuerzas.length : 0;
-  let eleccion = 'seguir';
-  if (d.resultado === 'rechazo' || org < 0.3) eleccion = 'cortar';
-  else if (d.resultado === 'estancamiento' && (d.ventaja ?? 1) < 0.95) eleccion = op.reservas.length ? 'reservas' : 'cortar';
-  else if (op.reservas.length && d.siguiente === 'explotacion') eleccion = 'reservas';
-  decidir(op, eleccion);
-}
 
 // ------------------------------------------------------------------ cada día
 
@@ -115,7 +99,7 @@ function atacar(pais, enemigos) {
   plan.diasPreparacion = 2 + Math.floor(Math.random() * 3);
   plan.postura = plan.fuerzas.length > 2 ? 'cerco' : 'frontal';
   const pr = predecir(plan, 30);
-  if ((pr.probabilidades.avance ?? 0) + (pr.probabilidades.ruptura ?? 0) < 0.45) return;
+  if (pr.probGanar < 0.5) return;
   lanzarOperacion(plan);
 }
 

@@ -1,6 +1,7 @@
 // Arranque del juego: carga los datos, arma el mapa y maneja el mouse, el teclado,
 // las órdenes a las tropas y el dibujo.
 
+import { iniciarNoticias } from './noticias.js';
 import { datos, cargarDatos, provinciaEn } from './datos.js';
 import { Camara } from './camara.js';
 import { Mapa } from './mapa.js';
@@ -14,11 +15,11 @@ import {
   reclutar, brigadaPorId, calcularRuta, mensaje,
 } from './ejercito.js';
 import {
-  operaciones, actualizarOperaciones, planInicial, lanzarOperacion, decidir, ejesPosibles,
+  operaciones, actualizarOperaciones, planInicial, lanzarOperacion, cancelarOperacion, ejesPosibles,
 } from './operaciones.js';
 import {
   iniciarInterfaz, actualizarReloj, actualizarResumen, mostrarCursor, mostrarProvincia, mostrarTropas,
-  mostrarModo, abrirPlan, cerrarPlan, planActual, renderPlan, operacionesPendientes,
+  mostrarModo, abrirPlan, cerrarPlan, planActual, renderPlan,
 } from './interfaz.js';
 import { iniciarEconomia, actualizarDiaEconomia } from './economia.js';
 import {
@@ -212,7 +213,7 @@ function moverElegidas(destino) {
     const e = ordenarMovimiento(b, destino);
     if (e) errores.push(e);
   }
-  if (errores.length) mensaje(errores[0], 'malo', jugador);
+  if (errores.length) mensaje(errores[0], 'malo', jugador, 'aviso');
   refrescarPaneles();
 }
 
@@ -222,12 +223,12 @@ function ordenSobre(destino) {
   if (destino < 0 || !estado.seleccion.size) return;
   if (enemigosEn(jugador, destino).length) {
     const plan = planInicial(jugador, destino, tropasElegidas());
-    if (plan.eje < 0) { mensaje('Para atacar esa provincia tiene que limitar con una provincia tuya.', 'malo', jugador); return; }
+    if (plan.eje < 0) { mensaje('Para atacar esa provincia tiene que limitar con una provincia tuya.', 'malo', jugador, 'aviso'); return; }
     plan.rapida = true;
     plan.diasPreparacion = 0;
     plan.artilleria = { preparacion: false, ruptura: true, explotacion: false };
     const e = lanzarOperacion(plan);
-    if (e) mensaje(e, 'malo', jugador);
+    if (e) mensaje(e, 'malo', jugador, 'aviso');
     estado.seleccion.clear();
     refrescarPaneles();
     return;
@@ -242,10 +243,10 @@ function ordenAerea(destino) {
   if (!e) return;
   if (datos.duenos[destino] === jugador) {
     const base = basesDe(jugador).find((b) => b.provincia === destino);
-    if (!base) { mensaje(`${datos.provincias[destino].nombre} no tiene base aérea.`, 'malo', jugador); return; }
+    if (!base) { mensaje(`${datos.provincias[destino].nombre} no tiene base aérea.`, 'malo', jugador, 'aviso'); return; }
     const err = cambiarBase(e, base.indice);
-    if (err) mensaje(err, 'malo', jugador);
-    else mensaje(`El ${e.nombre} se muda a ${base.nombre}.`, 'info', jugador);
+    if (err) mensaje(err, 'malo', jugador, 'aviso');
+    else mensaje(`El ${e.nombre} se muda a ${base.nombre}.`, 'info', jugador, 'aviso');
     refrescarPaneles();
     return;
   }
@@ -253,13 +254,13 @@ function ordenAerea(destino) {
     abrirPaquete(jugador, destino, e.id);
     return;
   }
-  mensaje('Solo se ataca a países con los que estás en guerra.', 'malo', jugador);
+  mensaje('Solo se ataca a países con los que estás en guerra.', 'malo', jugador, 'aviso');
 }
 
 function abrirPlanSobre(objetivo, preferidas = tropasElegidas()) {
   if (!enGuerra(jugador, datos.duenos[objetivo])) return;
   if (!ejesPosibles(jugador, objetivo).length) {
-    mensaje('Para atacar esa provincia tiene que limitar con una provincia tuya.', 'malo', jugador);
+    mensaje('Para atacar esa provincia tiene que limitar con una provincia tuya.', 'malo', jugador, 'aviso');
     return;
   }
   abrirPlan(planInicial(jugador, objetivo, preferidas));
@@ -275,7 +276,7 @@ function clicEnPlan(i) {
   else if (k < 0 && enGuerra(jugador, datos.duenos[i])) {
     const ultimo = plan.objetivos.at(-1);
     if (datos.provincias[ultimo].conexiones.some((c) => c.j === i)) plan.objetivos.push(i);
-    else mensaje('Los objetivos de la explotación tienen que ir pegados uno al otro.', 'malo', jugador);
+    else mensaje('Los objetivos siguientes tienen que ir pegados uno al otro.', 'malo', jugador, 'aviso');
   } else if (ejesPosibles(jugador, plan.objetivos[0]).includes(i)) plan.eje = i;
   renderPlan();
   marcar();
@@ -284,12 +285,12 @@ function clicEnPlan(i) {
 const acciones = {
   reclutar: (tipo, prov) => {
     const e = reclutar(jugador, tipo, prov);
-    if (e) mensaje(e, 'malo', jugador);
+    if (e) mensaje(e, 'malo', jugador, 'aviso');
     refrescarPaneles();
   },
   declararGuerra: (pais) => {
     const e = declararConJustificacion(jugador, pais);
-    if (e) mensaje(e, 'malo', jugador);
+    if (e) mensaje(e, 'malo', jugador, 'aviso');
     refrescarPaneles();
   },
   pausar: () => {
@@ -307,11 +308,15 @@ const acciones = {
     refrescarPaneles();
   },
   planear: (prov) => abrirPlanSobre(prov),
-  decidir: (op, eleccion) => {
-    decidir(op, eleccion);
+  cancelarOperacion: (op) => { cancelarOperacion(op); refrescarPaneles(); },
+  // Ir a una batalla: centra el mapa y abre la ficha de la provincia con el detalle.
+  verBatalla: (prov) => {
+    estado.seleccion.clear();
+    estado.escuadron = null;
+    estado.flota = null;
+    estado.provincia = prov;
+    acciones.centrarEn(prov);
     refrescarPaneles();
-    const otra = operacionesPendientes()[0];
-    if (otra) setTimeout(() => ejercito.eventos.dispatchEvent(new CustomEvent('decision', { detail: otra })), 50);
   },
   quitarDeSeleccion: (id) => { estado.seleccion.delete(id); refrescarPaneles(); },
   centrarEn: (prov) => {
@@ -325,7 +330,7 @@ const acciones = {
   abrirPais: (pais, pestana) => abrirPais(pais, pestana),
   construirDeposito: (prov) => {
     const e = construirDeposito(jugador, prov);
-    if (e) mensaje(e, 'malo', jugador);
+    if (e) mensaje(e, 'malo', jugador, 'aviso');
     refrescarPaneles();
   },
   paqueteSobre: (prov) => {
@@ -398,12 +403,12 @@ function lanzar(rapida) {
     plan.diasPreparacion = 0;
   }
   const e = lanzarOperacion(plan);
-  if (e) { mensaje(e, 'malo', jugador); return; }
+  if (e) { mensaje(e, 'malo', jugador, 'aviso'); return; }
   cerrarPlan();
   fijarModo('normal');
   estado.seleccion.clear();
   refrescarPaneles();
-  if (tiempo.pausado) mensaje('La operación está lista. Sacá la pausa para que empiece.', 'info', jugador);
+  if (tiempo.pausado) mensaje('La operación está lista. Sacá la pausa para que empiece.', 'info', jugador, 'aviso');
 }
 document.getElementById('plan-lanzar').addEventListener('click', () => lanzar(false));
 document.getElementById('plan-rapida').addEventListener('click', () => lanzar(true));
@@ -428,7 +433,7 @@ function clic(p, boton, shift) {
     const z = zonaEn(m.x, m.y);
     if (f && z) {
       const e = ordenarFlota(f, z.clave);
-      if (e) mensaje(e, 'malo', jugador);
+      if (e) mensaje(e, 'malo', jugador, 'aviso');
       refrescarPaneles();
     }
     return;
@@ -438,13 +443,13 @@ function clic(p, boton, shift) {
   if (estado.modo === 'objetivo') {
     fijarModo('normal');
     if (prov >= 0 && enGuerra(jugador, datos.duenos[prov])) abrirPlanSobre(prov);
-    else mensaje('Elegí una provincia de un país con el que estés en guerra.', 'malo', jugador);
+    else mensaje('Elegí una provincia de un país con el que estés en guerra.', 'malo', jugador, 'aviso');
     return;
   }
   if (estado.modo === 'blanco') {
     fijarModo('normal');
     if (prov >= 0 && enGuerra(jugador, datos.duenos[prov])) acciones.paqueteSobre(prov);
-    else mensaje('Elegí una provincia de un país con el que estés en guerra.', 'malo', jugador);
+    else mensaje('Elegí una provincia de un país con el que estés en guerra.', 'malo', jugador, 'aviso');
     return;
   }
   if (estado.modo === 'plan') { clicEnPlan(prov); return; }
@@ -454,6 +459,7 @@ function clic(p, boton, shift) {
     return;
   }
   const ficha = fichaEn(p.x, p.y);
+  if (ficha?.batalla != null) { acciones.verBatalla(ficha.batalla); return; }
   if (ficha?.flota != null) {
     if (ficha.pais === jugador) elegirFlota(ficha.flota);
     else abrirPais(ficha.pais, 'marina');
@@ -605,7 +611,7 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   if (e.repeat) return;
-  if (!document.getElementById('decision').hidden && k !== 'escape') return;
+  if (!document.getElementById('diario').hidden) return;
   if (k === ' ' || k === 'p') {
     if (e.target.closest?.('button')) e.target.blur();
     alternarPausa();
@@ -718,6 +724,7 @@ async function arrancar(guardado = {}) {
   });
   tiempo.eventos.addEventListener('hora', alPasarHora);
   iniciarInterfaz(acciones);
+  iniciarNoticias(acciones);
   iniciarPanelPais(acciones);
   iniciarPanelAereo(acciones);
   iniciarPanelMarina(acciones);

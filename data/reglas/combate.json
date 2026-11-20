@@ -1,34 +1,8 @@
 {
-  "_comentario": "Reglas del combate y las Operaciones (guion: Combate y Operaciones). Ventaja = raíz(P_ataque / P_defensa) x Azar(azar_min a azar_max). Los valores se ajustan probando.",
+  "_comentario": "Reglas del combate y las Operaciones (guion: Combate y Operaciones). Combate continuo: cada hora Ventaja = raíz(P_ataque / P_defensa) x Azar(azar_min a azar_max); la batalla sigue hasta que un lado queda sin tropas en condiciones de pelear (organización por debajo del mínimo). Los valores se ajustan probando.",
   "fuente": "Reglas del juego (elaboración propia)",
   "azar_min": 0.8,
   "azar_max": 1.2,
-  "resultados": [
-    {
-      "hasta": 0.8,
-      "clave": "rechazo",
-      "nombre": "Rechazo",
-      "texto": "El ataque fracasa: el atacante pierde mucho y no avanza."
-    },
-    {
-      "hasta": 1.2,
-      "clave": "estancamiento",
-      "nombre": "Estancamiento",
-      "texto": "Desgaste para los dos lados, sin avance."
-    },
-    {
-      "hasta": 1.6,
-      "clave": "avance",
-      "nombre": "Avance lento",
-      "texto": "Se gana la provincia con bajas, sin abrir paso para explotar."
-    },
-    {
-      "hasta": 999,
-      "clave": "ruptura",
-      "nombre": "Ruptura",
-      "texto": "Se rompe la defensa: se abre la fase de explotación."
-    }
-  ],
   "terreno": {
     "llanura": {
       "ancho_frente": 6,
@@ -114,27 +88,21 @@
       "explotacion_extra": 1
     }
   },
-  "fases": {
-    "preparacion": {
-      "horas": 12,
-      "organizacion_defensor_por_hora_con_artilleria": 0.012,
-      "atrincheramiento_por_hora_con_artilleria": 0.006
-    },
-    "ruptura": {
-      "horas": 48
-    },
-    "explotacion": {
-      "horas_por_provincia": 24,
-      "provincias_maximas": 2,
-      "suministro_por_provincia": 0.85,
-      "organizacion_defensor_sorprendido": 0.6
-    }
+  "_bombardeo_comentario": "Bombardeo previo (si se eligió artillería de preparación o la postura de desgaste): unas horas de fuego antes del asalto que bajan la organización y el atrincheramiento del defensor.",
+  "bombardeo": {
+    "horas": 12,
+    "organizacion_defensor_por_hora": 0.012,
+    "atrincheramiento_por_hora": 0.006
+  },
+  "batalla": {
+    "horas_entre_salidas_aereas": 24,
+    "horas_maximas_prediccion": 336
   },
   "desgaste": {
-    "organizacion_atacante_por_hora": 0.012,
-    "organizacion_defensor_por_hora": 0.012,
-    "bajas_atacante_por_hora": 0.0016,
-    "bajas_defensor_por_hora": 0.0013,
+    "organizacion_atacante_por_hora": 0.008,
+    "organizacion_defensor_por_hora": 0.008,
+    "bajas_atacante_por_hora": 0.0011,
+    "bajas_defensor_por_hora": 0.0009,
     "rechazo_bajas_extra": 0.05,
     "ruptura_bajas_extra_defensor": 0.12,
     "organizacion_minima_para_pelear": 0.1,
@@ -172,6 +140,5 @@
     "efectivos_por_100000_km2": 1500,
     "efectivos_maximos": 6000,
     "multiplicador_ciudad": 2.0
-  },
-  "_marcha_comentario": "En la explotación, las tropas tardan en llegar a la provincia siguiente: distancia entre centros dividida por la velocidad de marcha de las brigadas móviles."
+  }
 }

@@ -227,7 +227,7 @@ export function actualizarDiaSuministro() {
   // Depósitos que quedaron en territorio enemigo se pierden.
   for (const d of [...suministro.depositos]) {
     if (datos.duenos[d.provincia] !== d.pais) {
-      mensaje(`Se perdió el depósito de ${datos.provincias[d.provincia].nombre}.`, 'malo', d.pais);
+      mensaje(`Se perdió el depósito de ${datos.provincias[d.provincia].nombre}.`, 'malo', d.pais, 'aviso');
       suministro.depositos = suministro.depositos.filter((x) => x !== d);
     }
   }

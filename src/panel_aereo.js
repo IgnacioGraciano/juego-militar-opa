@@ -8,6 +8,7 @@ import {
   lanzarPaquete, TIPOS_PAQUETE, HORARIOS, ROLES, basesDe, fijarMision, cambiarBase,
 } from './aviacion.js';
 import { ejercito, enGuerra, mensaje } from './ejercito.js';
+import { aviso } from './noticias.js';
 
 let plan = null;
 let acc = {};
@@ -18,7 +19,7 @@ export function iniciarPanelAereo(acciones) {
   $('paquete-lanzar').addEventListener('click', () => {
     if (!plan) return;
     const e = lanzarPaquete(plan);
-    if (e) { mensaje(e, 'malo', plan.pais); return; }
+    if (e) { mensaje(e, 'malo', plan.pais, 'aviso'); return; }
     cerrarPaquete();
   });
 }
@@ -106,21 +107,12 @@ export function renderPaquete() {
   $('paquete-lanzar').disabled = !plan.atacantes.length || !enGuerra(plan.pais, datos.duenos[j]);
 }
 
-// Resumen al final de la incursión (no pausa el juego).
+// Resumen al final de la incursión: un aviso breve (no pausa el juego).
 export function mostrarResumenIncursion(v) {
   const r = v.resumen;
   if (!r || v.pais !== datos.escenario.pais_jugador) return;
-  const caja = $('decision');
-  caja.replaceChildren(h('div', { class: 'panel dialogo', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'incursion-titulo' },
-    h('div', { class: 'rotulo' }, `Paquete de ataque · ${r.blanco}`),
-    h('h2', { id: 'incursion-titulo' }, r.titulo),
-    ...r.lineas.map((l) => h('p', {}, l)),
-    h('dl', { class: 'datos' }, ...filasDatos([['Aviones perdidos', String(r.perdidas)], ['Enemigos derribados', String(r.derribados)]])),
-    h('div', { class: 'botones' }, h('button', { type: 'button', class: 'boton principal', onclick: () => { caja.hidden = true; } }, 'Cerrar')),
-  ));
-  caja.hidden = false;
+  aviso(`${r.titulo}. Perdimos ${r.perdidas} avión(es), derribamos ${r.derribados}.`, r.perdidas > r.derribados ? 'malo' : 'bueno');
 }
-
 
 // ------------------------------------------------------------------ tarjetas de avión
 

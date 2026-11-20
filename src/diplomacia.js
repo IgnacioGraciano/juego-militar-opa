@@ -90,7 +90,12 @@ export function fabricarJustificacion(de, contra) {
   diplomacia.justificaciones.push({ de, contra, horas: dias * 24, lista: false });
   cambiarTension(RP().tension_por_justificacion);
   cambiarRelacion(de, contra, -10);
-  mensaje(`${nombrePais(de)} empieza a fabricar una justificación de guerra contra ${nombrePais(contra)} (${dias} días).`, de === datos.escenario.pais_jugador ? 'info' : 'malo');
+  const j = datos.escenario.pais_jugador;
+  if (contra === j) {
+    mensaje(`Según fuentes diplomáticas, el gobierno de ${nombrePais(de)} prepara reclamos y argumentos para justificar una guerra contra nuestro país. Tendría listo el pretexto en unos ${dias} días.`, 'malo', j, {
+      seccion: 'Diplomacia', titular: `${nombrePais(de)} busca un pretexto para la guerra`, bajada: 'La Cancillería pide prudencia, pero las Fuerzas Armadas toman nota.',
+    });
+  } else if (de === j) mensaje(`Se empieza a fabricar una justificación contra ${nombrePais(contra)} (${dias} días).`, 'info', j, 'aviso');
   avisar('diplomacia');
   return null;
 }
@@ -201,7 +206,11 @@ export function firmarPaz(a, b, tipo) {
   }
   cambiarTension(-8);
   cambiarRelacion(a, b, 15);
-  mensaje(`Paz entre ${nombrePais(a)} y ${nombrePais(b)}: ${tipo === 'cesion' ? 'las provincias ocupadas cambian de dueño' : 'alto el fuego, cada uno se queda con lo que tiene'}.`, 'bueno');
+  const nos = a === datos.escenario.pais_jugador || b === datos.escenario.pais_jugador;
+  mensaje(`${nombrePais(a)} y ${nombrePais(b)} firmaron la paz. ${tipo === 'cesion' ? 'Las provincias ocupadas pasan a manos de quien las tiene.' : 'Se acordó un alto el fuego: cada uno se queda con lo que tiene.'}`, 'bueno', null, {
+    seccion: nos ? 'Última hora' : 'Internacionales', titular: nos ? '¡Paz!' : `Paz entre ${nombrePais(a)} y ${nombrePais(b)}`,
+    bajada: tipo === 'cesion' ? 'Se firmó un tratado con cesión de territorios.' : 'Callan las armas: rige el alto el fuego.',
+  });
   avisar('cambio');
   avisar('diplomacia');
 }
@@ -268,7 +277,9 @@ export function actualizarHoraDiplomacia() {
     j.horas--;
     if (j.horas <= 0) {
       j.lista = true;
-      mensaje(`${nombrePais(j.de)} ya tiene justificación de guerra contra ${nombrePais(j.contra)}.`, j.de === datos.escenario.pais_jugador ? 'bueno' : 'malo');
+      const jug = datos.escenario.pais_jugador;
+      if (j.de === jug) mensaje(`La justificación contra ${nombrePais(j.contra)} está lista. Desde el panel de ese país se puede declarar la guerra.`, 'bueno', jug, { seccion: 'Política', titular: `Listos los argumentos contra ${nombrePais(j.contra)}`, bajada: 'El gobierno ya puede pedir la declaración de guerra.' });
+      else if (j.contra === jug) mensaje(`${nombrePais(j.de)} completó su justificación de guerra contra nuestro país: puede atacar en cualquier momento.`, 'malo', jug, { seccion: 'Diplomacia', titular: `${nombrePais(j.de)}, lista para atacar`, bajada: 'Ya tiene el pretexto para declararnos la guerra.' });
       avisar('diplomacia');
     }
   }

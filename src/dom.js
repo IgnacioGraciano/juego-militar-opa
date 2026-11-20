@@ -47,3 +47,28 @@ export function medidor(fraccion, clase = '') {
 }
 
 export const filasDatos = (filas) => filas.filter(Boolean).flatMap(([k, v]) => [h('dt', {}, k), h('dd', {}, v)]);
+
+// Globo de ayuda al pasar el mouse: contenido() devuelve {titulo, filas: [[k, v]], nota}.
+export function conGlobo(el, contenido) {
+  const mostrar = () => {
+    const g = $('globo');
+    if (!g) return;
+    const c = contenido();
+    g.replaceChildren(...[
+      c.titulo ? h('b', {}, c.titulo) : null,
+      ...(c.filas ?? []).filter(Boolean).map(([k, v]) => h('div', { class: 'globo-fila' }, h('span', {}, k), h('span', {}, v))),
+      c.nota ? h('div', { class: 'tenue', style: 'margin-top:4px' }, c.nota) : null].filter(Boolean));
+    g.hidden = false;
+    const r = el.getBoundingClientRect();
+    const a = g.getBoundingClientRect();
+    g.style.left = `${Math.max(6, Math.min(innerWidth - a.width - 6, r.left + r.width / 2 - a.width / 2))}px`;
+    g.style.top = `${r.bottom + 8}px`;
+  };
+  const ocultar = () => { const g = $('globo'); if (g) g.hidden = true; };
+  el.addEventListener('mouseenter', mostrar);
+  el.addEventListener('mouseleave', ocultar);
+  el.addEventListener('focus', mostrar);
+  el.addEventListener('blur', ocultar);
+  el.addEventListener('click', ocultar);
+  return el;
+}
