@@ -8,7 +8,7 @@
 import { datos, cambiarDueno, nombrePais } from './datos.js';
 import { hayEquipo, gastarEquipo, equipoPorTipo } from './economia.js';
 import { factorRecuperacion, zona, suministroEn } from './suministro.js';
-import { factorTanque } from './disenador.js';
+import { factorTanque, disenador } from './disenador.js';
 import { enlacesMaritimos } from './marina.js';
 
 export const ejercito = {
@@ -197,6 +197,7 @@ function nuevaBrigada(pais, tipo, provincia, extra = {}) {
     efectivosMax: efectivos,
     entrenamiento: extra.entrenamiento ?? ley.entrenamiento,
     equipo: (ejercito.equipo[pais] ?? 1) * (tipo === 'blindada' || tipo === 'mecanizada' ? factorTanque(pais) : 1),
+    tanque: tipo === 'blindada' || tipo === 'mecanizada' ? (disenador.tanqueEnUso[pais] ?? 'm4') : null,
     moral: 1,
     organizacion: 1,
     atrincheramiento: 0,

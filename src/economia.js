@@ -13,6 +13,7 @@ import { ejercito, enGuerra, enemigosDe, mensaje, avisar, datoHistorico, anioEsc
 import { fechaLocal } from './tiempo.js';
 import { aviacion, modelo, recibirAviones } from './aviacion.js';
 import { zonasBloqueadas } from './marina.js';
+import { recibirTanques } from './disenador.js';
 
 export const economia = { paises: {}, contratos: [], siguienteId: 1 };
 const RE = () => datos.reglas.economia;
@@ -73,13 +74,19 @@ export function capacidad(pais, producto, claveModelo = null) {
     if (!m?.fabricable_en?.includes(pais)) return 0;
     return e.sectores.aeronautica * RE().aviones_por_nivel_por_dia;
   }
+  if (producto === 'tanque') {
+    const t = datos.tanques.modelos[claveModelo];
+    if (!t?.fabricable_en?.includes(pais)) return 0;
+    return e.sectores.metalmecanica * RE().tanques.companias_por_nivel_por_dia;
+  }
   const p = RE().productos[producto];
   const nivel = p.sectores.reduce((s, k) => s + e.sectores[k], 0) / p.sectores.length;
   return nivel * p.por_nivel_por_dia;
 }
 
 export function costoUnitario(producto, claveModelo, tipo) {
-  const base = producto === 'avion' ? modelo(claveModelo).costo : RE().productos[producto].costo;
+  const base = producto === 'avion' ? modelo(claveModelo).costo
+    : producto === 'tanque' ? datos.tanques.modelos[claveModelo].costo : RE().productos[producto].costo;
   return base * RE().contratos[tipo].costo;
 }
 
@@ -158,14 +165,16 @@ export function cotizar(pais, pedido) {
   const claveModelo = pedido.modelo;
   if (!cantidad || cantidad <= 0) return { error: 'Elegí una cantidad.' };
   if (producto === 'avion' && !modelo(claveModelo)) return { error: 'Elegí un modelo.' };
+  if (producto === 'tanque' && !datos.tanques.modelos[claveModelo]) return { error: 'Elegí un modelo.' };
   let proveedor = pedido.proveedor;
   if (producto === 'avion' && tipo === 'extranjera') proveedor = modelo(claveModelo).origen;
+  if (producto === 'tanque' && tipo === 'extranjera') proveedor = datos.tanques.modelos[claveModelo].origen;
   if (tipo === 'extranjera' && proveedor === pais) return { error: 'Es de fabricación propia: usá un contrato estatal.' };
   const costo = costoUnitario(producto, claveModelo, tipo) * cantidad;
   let porDia;
   if (tipo === 'estatal') {
     porDia = capacidad(pais, producto, claveModelo);
-    if (porDia <= 0) return { error: producto === 'avion' ? 'Tu industria no fabrica ese modelo.' : 'Tu industria no tiene capacidad para esto.' };
+    if (porDia <= 0) return { error: producto === 'avion' || producto === 'tanque' ? 'Tu industria no fabrica ese modelo.' : 'Tu industria no tiene capacidad para esto.' };
   } else {
     porDia = cantidad / RE().contratos.extranjera.dias_entrega;
     const e = embargo(proveedor, pais);
@@ -201,6 +210,7 @@ export function firmarContrato(pais, pedido) {
 
 export function textoProducto(c) {
   if (c.producto === 'avion') return modelo(c.modelo).nombre;
+  if (c.producto === 'tanque') return `Tanques ${datos.tanques.modelos[c.modelo].nombre} (compañías)`;
   return RE().productos[c.producto].nombre;
 }
 
@@ -214,12 +224,13 @@ function entregar(c, n) {
   const e = economiaDe(c.pais);
   if (c.producto === 'equipo') e.equipo += n;
   else if (c.producto === 'repuestos') e.repuestos += n;
+  else if (c.producto === 'tanque') recibirTanques(c.pais, c.modelo, n);
   else recibirAviones(c.pais, c.modelo, n, c.base);
   c.entregados += n;
   if (c.entregados >= c.cantidad) {
     c.estado = 'terminado';
     c.motivo = 'Entregado';
-    mensaje(`Se completó el contrato de ${textoProducto(c)} (${c.cantidad}).`, 'bueno', c.pais);
+    mensaje(`Llegó el pedido de ${textoProducto(c)} (${c.cantidad}).`, 'bueno', c.pais, 'aviso');
   }
 }
 

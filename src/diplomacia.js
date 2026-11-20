@@ -24,6 +24,9 @@ export const diplomacia = {
   eventosVistos: [],
   inicioGuerra: {}, // "A|B" -> horas
   provinciasPerdidas: {}, // país -> cantidad
+  acuerdos: [], // {tipo: 'comercio'|'no_agresion'|'alianza', a, b, desde}
+  mejorando: [], // {de, con, horas}
+  ultimaDenuncia: {}, // país -> horas
 };
 const RP = () => datos.reglas.diplomacia;
 const clave = (a, b) => [a, b].sort().join('|');
@@ -45,6 +48,9 @@ export function iniciarDiplomacia() {
   diplomacia.eventosVistos = [];
   diplomacia.inicioGuerra = {};
   diplomacia.provinciasPerdidas = {};
+  diplomacia.acuerdos = structuredClone(d.acuerdos ?? []);
+  diplomacia.mejorando = [];
+  diplomacia.ultimaDenuncia = {};
   if (!escuchando) {
     datos.eventos.addEventListener('dueno', (e) => alCambiarDueno(e.detail));
     escuchando = true;
@@ -85,6 +91,7 @@ export function diasJustificacion(de, contra) {
 
 export function fabricarJustificacion(de, contra) {
   if (enGuerra(de, contra)) return 'Ya están en guerra.';
+  if (tieneAcuerdo(de, contra, 'no_agresion') || tieneAcuerdo(de, contra, 'alianza')) return `Hay un ${tieneAcuerdo(de, contra, 'alianza') ? 'alianza' : 'pacto de no agresión'} con ${nombrePais(contra)}: primero hay que romperlo.`;
   if (justificacion(de, contra)) return 'Ya hay una justificación en marcha o lista.';
   const dias = diasJustificacion(de, contra);
   diplomacia.justificaciones.push({ de, contra, horas: dias * 24, lista: false });
@@ -108,6 +115,7 @@ function darJustificacion(de, contra) {
 export function puedeDeclarar(de, contra) {
   if (de === contra) return 'No.';
   if (enGuerra(de, contra)) return 'Ya están en guerra.';
+  if (tieneAcuerdo(de, contra, 'no_agresion') || tieneAcuerdo(de, contra, 'alianza')) return `Hay un acuerdo con ${nombrePais(contra)} que lo impide.`;
   if (!tieneJustificacion(de, contra)) return `Hace falta una justificación de guerra contra ${nombrePais(contra)}.`;
   return null;
 }
@@ -127,8 +135,120 @@ export function declararGuerra(de, contra) {
   cambiarRelacion(de, contra, -40);
   // El atacado se defiende con más ganas.
   diplomacia.voluntad[contra] = limitar((diplomacia.voluntad[contra] ?? 60) + 8, 0, 100);
+  // Los aliados del atacado entran en la guerra.
+  for (const aliado of aliadosDe(contra)) {
+    if (aliado === de || enGuerra(aliado, de)) continue;
+    abrirGuerra(aliado, de);
+    diplomacia.inicioGuerra[clave(aliado, de)] = tiempo.horas;
+  }
   avisar('diplomacia');
   return null;
+}
+
+// ------------------------------------------------------------------ acciones diplomáticas
+
+const RA = () => RP().acciones;
+export const acuerdoEntre = (a, b, tipo) => diplomacia.acuerdos.find((x) => x.tipo === tipo && clave(x.a, x.b) === clave(a, b));
+export const tieneAcuerdo = (a, b, tipo) => !!acuerdoEntre(a, b, tipo);
+export const acuerdosDe = (pais) => diplomacia.acuerdos.filter((x) => x.a === pais || x.b === pais);
+export const aliadosDe = (pais) => acuerdosDe(pais).filter((x) => x.tipo === 'alianza').map((x) => (x.a === pais ? x.b : x.a));
+export const mejorandoCon = (de, con) => diplomacia.mejorando.find((m) => m.de === de && m.con === con);
+
+// Qué tan dispuesto está 'pais' a firmar con 'de': devuelve null si acepta o el motivo si no.
+export function rechazoAcuerdo(pais, de, tipo) {
+  const r = RA()[tipo];
+  if (enGuerra(pais, de)) return 'Están en guerra.';
+  if (tieneAcuerdo(pais, de, tipo)) return 'Ya hay un acuerdo así.';
+  if (relacion(pais, de) < r.relacion_minima) return `${nombrePais(pais)} no acepta: hace falta relación ${r.relacion_minima > 0 ? '+' : ''}${r.relacion_minima} o más.`;
+  if (tipo !== 'comercio' && (justificacion(pais, de) || justificacion(de, pais))) return 'Hay una justificación de guerra de por medio.';
+  if (tipo === 'alianza' && enemigosDe(pais).some((x) => !enGuerra(de, x))) return `${nombrePais(pais)} está en guerra y quiere aliados que ya peleen a su lado.`;
+  return null;
+}
+
+export function proponerAcuerdo(de, con, tipo) {
+  const no = rechazoAcuerdo(con, de, tipo);
+  if (no) return no;
+  diplomacia.acuerdos.push({ tipo, a: de, b: con, desde: tiempo.horas });
+  if (RA()[tipo].tension) cambiarTension(RA()[tipo].tension);
+  cambiarRelacion(de, con, 5);
+  const nombre = RA()[tipo].nombre;
+  const j = datos.escenario.pais_jugador;
+  if (tipo === 'comercio') mensaje(`${nombre} con ${nombrePais(con)}.`, 'bueno', j, 'aviso');
+  else mensaje(`${nombrePais(de)} y ${nombrePais(con)} firmaron un ${nombre.toLowerCase()}.${tipo === 'alianza' ? ' Si uno es atacado, el otro entra en la guerra.' : ' Ninguno puede declararle la guerra al otro mientras dure.'}`, 'bueno', null, {
+    seccion: 'Diplomacia', titular: tipo === 'alianza' ? `Alianza entre ${nombrePais(de)} y ${nombrePais(con)}` : `Pacto de no agresión con ${nombrePais(de === j ? con : de)}`,
+    bajada: tipo === 'alianza' ? 'Los dos gobiernos se comprometen a defenderse mutuamente.' : 'Las cancillerías celebran el entendimiento.',
+  });
+  avisar('diplomacia');
+  return null;
+}
+
+export function romperAcuerdo(de, con, tipo) {
+  const x = acuerdoEntre(de, con, tipo);
+  if (!x) return 'No hay acuerdo.';
+  diplomacia.acuerdos = diplomacia.acuerdos.filter((y) => y !== x);
+  cambiarRelacion(de, con, RA().romper.relacion);
+  if (tipo !== 'comercio') cambiarTension(RA().romper.tension);
+  mensaje(`Se rompió el ${RA()[tipo].nombre.toLowerCase()} con ${nombrePais(con)}.`, 'malo', datos.escenario.pais_jugador, 'aviso');
+  avisar('diplomacia');
+  return null;
+}
+
+export function mejorarRelaciones(de, con) {
+  if (mejorandoCon(de, con)) { diplomacia.mejorando = diplomacia.mejorando.filter((m) => !(m.de === de && m.con === con)); avisar('diplomacia'); return null; }
+  if (enGuerra(de, con)) return 'Están en guerra.';
+  if (diplomacia.mejorando.filter((m) => m.de === de).length >= RA().mejorar.simultaneas) return `Como mucho ${RA().mejorar.simultaneas} misiones diplomáticas a la vez.`;
+  diplomacia.mejorando.push({ de, con, horas: RA().mejorar.dias * 24 });
+  avisar('diplomacia');
+  return null;
+}
+
+export function enviarAyuda(de, con) {
+  const r = RA().ayuda;
+  const e = economiaDe(de);
+  if (!e) return 'Sin economía.';
+  if (enGuerra(de, con)) return 'Están en guerra.';
+  if (e.fondosMilitares < r.fondos) return `Hacen falta ${r.fondos} millones de fondos militares.`;
+  e.fondosMilitares -= r.fondos;
+  const otro = economiaDe(con);
+  if (otro) otro.equipo += r.equipo;
+  cambiarRelacion(de, con, r.relacion);
+  mensaje(`Se mandó ayuda militar a ${nombrePais(con)}: ${r.equipo} juegos de equipo.`, 'bueno', de, 'aviso');
+  avisar('diplomacia');
+  avisar('economia');
+  return null;
+}
+
+export const diasParaDenunciar = (de) => Math.max(0, Math.ceil(((diplomacia.ultimaDenuncia[de] ?? -1e9) + RA().onu.dias_espera * 24 - tiempo.horas) / 24));
+
+export function denunciarOnu(de, contra) {
+  const r = RA().onu;
+  if (diasParaDenunciar(de) > 0) return `Hay que esperar ${diasParaDenunciar(de)} días para otra denuncia.`;
+  diplomacia.ultimaDenuncia[de] = tiempo.horas;
+  cambiarTension(r.tension);
+  cambiarRelacion(de, contra, r.relacion);
+  for (const p of new Set(datos.duenos)) if (p !== de && p !== contra) cambiarRelacion(p, contra, r.relacion_terceros);
+  if (enemigosDe(contra).length) cambiarVoluntad(contra, r.voluntad_enemiga);
+  mensaje(`Ante la Asamblea General, ${nombrePais(de)} denunció a ${nombrePais(contra)}. Varios países expresaron su preocupación y ${nombrePais(contra)} queda más aislado.`, 'info', de, {
+    seccion: 'Internacionales', titular: `${nombrePais(de)} denuncia a ${nombrePais(contra)} en la ONU`, bajada: 'Debate encendido en Nueva York.',
+  });
+  avisar('diplomacia');
+  return null;
+}
+
+function actualizarDiaAcuerdos() {
+  const r = RA();
+  for (const m of diplomacia.mejorando) {
+    m.horas -= 24;
+    cambiarRelacion(m.de, m.con, r.mejorar.por_dia);
+  }
+  diplomacia.mejorando = diplomacia.mejorando.filter((m) => m.horas > 0 && !enGuerra(m.de, m.con));
+  for (const x of diplomacia.acuerdos) {
+    if (x.tipo !== 'comercio') continue;
+    for (const p of [x.a, x.b]) { const e = economiaDe(p); if (e) e.divisas += r.comercio.divisas_por_dia; }
+    if (Math.round((tiempo.horas - x.desde) / 24) % 30 === 0) cambiarRelacion(x.a, x.b, r.comercio.relacion_por_mes);
+  }
+  // Una guerra entre dos países rompe sus acuerdos.
+  diplomacia.acuerdos = diplomacia.acuerdos.filter((x) => !enGuerra(x.a, x.b));
 }
 
 // ------------------------------------------------------------------ voluntad, paz y mediación
@@ -307,6 +427,7 @@ export function actualizarDiaDiplomacia() {
     if (datos.provincias.some((pr, i) => pr.pais === p && datos.duenos[i] !== p)) cambiarVoluntad(p, rp.voluntad.defensa_propia);
   }
   if (!ejercito.guerras.size) cambiarTension(-rp.tension_baja_por_dia);
+  actualizarDiaAcuerdos();
   // Mediación: con mucha tensión, un tercero (el Papa, la ONU) ofrece mediar
   if (diplomacia.tension >= rp.mediacion.tension_minima && Math.random() < rp.mediacion.probabilidad_por_dia) {
     const jugador = datos.escenario.pais_jugador;

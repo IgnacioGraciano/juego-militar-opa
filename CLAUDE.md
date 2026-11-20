@@ -27,10 +27,15 @@
   estimar con años anteriores; sin ningún dato, por tamaño y poder militar del país.
 - Todo número de reglas (combate, movimiento, reclutamiento) va en `data/reglas/*.json`,
   no en el código.
-- Módulos: `ejercito.js` (brigadas), `operaciones.js` (combate), `suministro.js`, `aviacion.js`,
-  `economia.js`; interfaz en `interfaz.js` (ficha, tropas, plan), `panel_pais.js` (barra y panel
-  de país con pestañas), `panel_aereo.js` (paquetes de ataque), `dom.js` (ayudas), `simbolos.js`
-  (pictogramas de unidades, mismo dibujo en Canvas y SVG).
+- Módulos: `ejercito.js` (brigadas), `operaciones.js` (combate continuo, sin pausas entre fases),
+  `suministro.js`, `aviacion.js`, `economia.js`; interfaz en `interfaz.js` (ficha, tropas, plan,
+  batallas), `panel_pais.js` (barra y panel de país: Resumen con árbol, Diplomacia, Economía,
+  Suministro), `panel_ejercito.js` (pestaña Ejército: fuerzas, producir y comprar, diseño),
+  `panel_aereo.js` (paquetes de ataque), `noticias.js` (diario que pausa y avisos breves),
+  `dom.js` (ayudas, globos), `simbolos.js` (pictogramas de unidades, mismo dibujo en Canvas y SVG).
+- Mensajes: `mensaje(texto, tono, pais, importancia)`. Sin importancia no se muestra; `'aviso'`
+  es un renglón breve; un objeto `{titular, seccion, bajada}` sale como noticia del diario y pausa.
+  Solo lo que amerite pausar va al diario.
 - Pasos 8 a 12: `disenador.js`, `marina.js`, `diplomacia.js` (relaciones, árbol nacional,
   eventos, paz), `ia.js`, `partida.js` (guardar y cargar). Paneles: `panel_marina.js` (flota y
   diálogos). Estado nuevo que haya que guardar tiene que sumarse en `partida.js`.

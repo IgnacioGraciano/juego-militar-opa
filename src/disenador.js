@@ -8,11 +8,13 @@ import { mensaje, avisar } from './ejercito.js';
 import { economiaDe } from './economia.js';
 import { aviacion, modelo, olvidarModelo } from './aviacion.js';
 import { tiempo } from './tiempo.js';
+import { ejercito } from './ejercito.js';
 
 export const disenador = {
   disenos: [], // {clave, pais, tipo: 'avion'|'tanque', base, nombre, opciones}
   puntosExtra: {}, // país -> puntos de diseño ganados en el árbol nacional
   tanqueEnUso: {}, // país -> clave del tanque en producción
+  tanquesStock: {}, // país -> {clave: compañías sin asignar}
   siguiente: 1,
 };
 const RD = () => datos.reglas.disenador;
@@ -21,6 +23,7 @@ export function iniciarDisenador() {
   disenador.disenos = [];
   disenador.puntosExtra = {};
   disenador.tanqueEnUso = { ...(datos.escenario.tanques ?? {}) };
+  disenador.tanquesStock = {};
 }
 
 // ------------------------------------------------------------------ puntos
@@ -163,3 +166,34 @@ export function factorTanque(pais) {
   const t = tanqueDe(pais);
   return Math.sqrt((t.ataque + t.defensa) / 2);
 }
+
+const factorDe = (clave) => {
+  const t = datos.tanques.modelos[clave] ?? datos.tanques.modelos.m4;
+  return Math.sqrt((t.ataque + t.defensa) / 2);
+};
+
+// Llegan tanques (por compañías de 10): reequipan primero a las brigadas blindadas y
+// mecanizadas con el tanque más flojo; lo que sobra queda guardado. El modelo pasa a ser
+// el de las brigadas nuevas.
+export function recibirTanques(pais, clave, companias) {
+  const stock = (disenador.tanquesStock[pais] ??= {});
+  stock[clave] = (stock[clave] ?? 0) + companias;
+  const porBrigada = datos.reglas.economia.tanques.companias_por_brigada;
+  const nuevo = factorDe(clave);
+  const candidatas = ejercito.brigadas
+    .filter((b) => b.pais === pais && porBrigada[b.tipo] && factorDe(b.tanque ?? disenador.tanqueEnUso[pais]) < nuevo)
+    .sort((a, b) => factorDe(a.tanque ?? 'm4') - factorDe(b.tanque ?? 'm4'));
+  let reequipadas = 0;
+  for (const b of candidatas) {
+    if (stock[clave] < porBrigada[b.tipo]) break;
+    stock[clave] -= porBrigada[b.tipo];
+    b.equipo = (b.equipo / factorDe(b.tanque ?? disenador.tanqueEnUso[pais])) * nuevo;
+    b.tanque = clave;
+    reequipadas++;
+  }
+  if (factorDe(disenador.tanqueEnUso[pais] ?? 'm4') < nuevo) disenador.tanqueEnUso[pais] = clave;
+  if (reequipadas) mensaje(`${reequipadas} brigada(s) reciben el ${datos.tanques.modelos[clave].nombre}.`, 'bueno', pais, 'aviso');
+  avisar('diseno');
+}
+
+export const tanquesGuardados = (pais) => disenador.tanquesStock[pais] ?? {};

@@ -21,5 +21,51 @@
     "alto_el_fuego_voluntad": 50,
     "cesion_voluntad": 30
   },
-  "mediacion": { "tension_minima": 55, "probabilidad_por_dia": 0.01 }
+  "mediacion": {
+    "tension_minima": 55,
+    "probabilidad_por_dia": 0.01
+  },
+  "_acciones_comentario": "Acciones diplomáticas con otros países. relacion_minima: relación necesaria para que el otro acepte. mejorar: suma por día durante 'dias'; como mucho 'simultaneas' a la vez. comercio: divisas extra por día para cada parte (millones). ayuda: fondos que se mandan, juegos de equipo que recibe el otro. onu: cada cuántos días se puede denunciar.",
+  "acciones": {
+    "mejorar": {
+      "nombre": "Mejorar relaciones",
+      "por_dia": 0.25,
+      "dias": 120,
+      "simultaneas": 2
+    },
+    "comercio": {
+      "nombre": "Acuerdo comercial",
+      "relacion_minima": -10,
+      "divisas_por_dia": 0.15,
+      "relacion_por_mes": 1
+    },
+    "no_agresion": {
+      "nombre": "Pacto de no agresión",
+      "relacion_minima": 5,
+      "tension": -2
+    },
+    "alianza": {
+      "nombre": "Alianza defensiva",
+      "relacion_minima": 50,
+      "tension": 2
+    },
+    "ayuda": {
+      "nombre": "Ayuda militar",
+      "fondos": 40,
+      "equipo": 4,
+      "relacion": 8
+    },
+    "onu": {
+      "nombre": "Denunciar ante la ONU",
+      "dias_espera": 60,
+      "tension": 3,
+      "relacion": -10,
+      "relacion_terceros": -4,
+      "voluntad_enemiga": -3
+    },
+    "romper": {
+      "relacion": -15,
+      "tension": 3
+    }
+  }
 }

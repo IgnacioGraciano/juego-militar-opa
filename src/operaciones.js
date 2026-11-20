@@ -550,12 +550,9 @@ function victoria(op) {
   }
   if (rendidos) sumarBajasOp(op, 0, rendidos);
   if (datos.duenos[objetivo] !== op.pais) ocupar(objetivo, op.pais);
-  // Las tropas que atacaron entran en la provincia.
-  for (const b of atacantes) {
-    const r = calcularRuta(b, objetivo);
-    if (r && r.ruta.length) b.mov = { ruta: r.ruta, recorrido: 0 };
-    else { b.provincia = objetivo; b.mov = null; }
-  }
+  // Las tropas que atacaron entran en la provincia; los refuerzos enemigos que venían, se frenan.
+  for (const b of atacantes) { b.provincia = objetivo; b.mov = null; }
+  for (const b of ejercito.brigadas) if (b.pais !== op.pais && b.mov?.ruta.includes(objetivo)) b.mov = null;
   op.tomadas.push(objetivo);
   limpiarDestruidas(op);
   siguienteObjetivo(op);

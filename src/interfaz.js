@@ -162,8 +162,8 @@ export function mostrarProvincia(i) {
       }, h('span', { class: 'reclutar-tipo' }, iconoUnidad(clave, jugador), h('b', {}, t.nombre)), h('small', {}, `${miles(c.efectivos)} h · ${c.equipo} equipo · ${c.dias} d`));
     })));
   } else if (!propia && !enGuerra(jugador, dueno)) {
-    acciones.push(h('button', { type: 'button', class: 'boton', onclick: () => acc.abrirPais(dueno, 'resumen') },
-      h('b', {}, `Guerra y paz con ${nombrePais(dueno)}…`), h('small', {}, 'Justificación, declaración de guerra, relaciones')));
+    acciones.push(h('button', { type: 'button', class: 'boton', onclick: () => acc.abrirPais(dueno, 'diplomacia') },
+      h('b', {}, `Diplomacia con ${nombrePais(dueno)}…`), h('small', {}, 'Relaciones, acuerdos, justificación de guerra')));
   } else if (enGuerra(jugador, dueno)) {
     const ejes = ejesPosibles(jugador, i);
     acciones.push(h('button', {

@@ -71,6 +71,12 @@ export function restaurar(texto, camara) {
   Object.assign(tiempo, p.tiempo, { pausado: true });
   Object.assign(ejercito, p.ejercito);
   operaciones.lista = p.operaciones.lista;
+  // Partidas de antes del combate continuo: las operaciones por fases pasan a batalla.
+  for (const op of operaciones.lista) {
+    if (op.estado === 'fase' || op.estado === 'decision') Object.assign(op, { estado: 'combate', horasBatalla: op.horasBatalla ?? 0, horasBombardeo: 0, balance: 0.5 });
+    op.tomadas ??= [];
+    op.reservas ??= [];
+  }
   operaciones.siguienteId = p.operaciones.siguienteId;
   Object.assign(suministro, p.suministro);
   Object.assign(datos.aviones.modelos, p.modelosPropios);

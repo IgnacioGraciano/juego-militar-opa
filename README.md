@@ -16,7 +16,7 @@ Orden de construcción del guion. Cada paso termina con algo que se puede probar
 | 1 | Mapa: relieve, provincias, zoom, cámara | Hecho |
 | 2 | Tiempo: pausa y velocidades | Hecho (con día y noche; el clima queda pendiente) |
 | 3 | Brigadas: crear, mover, mostrar en el mapa | Hecho (4 tipos, cuerpos con general, mano de obra) |
-| 4 | Combate y Operaciones básicas | Hecho (plan, calidad, 3 fases, predicción) |
+| 4 | Combate y Operaciones básicas | Hecho (plan, calidad, combate continuo, predicción) |
 | 5 | Suministro | Hecho (depósitos, zonas verde/amarilla/roja, rutas que se cortan, desgaste) |
 | 6 | Aviación | Hecho (escuadrones de 1978, alerta, combate aéreo, aviación en Operaciones, paquetes de ataque, pilotos, disponibilidad) |
 | 7 | Economía, sectores y contratos | Hecho (4 sectores, contratos estatales y extranjeros, embargos, impuestos y gasto militar, repuestos) |
@@ -24,7 +24,7 @@ Orden de construcción del guion. Cada paso termina con algo que se puede probar
 | 9 | Marina básica | Hecho (zonas, flotas de 1978, misiones, combate en 3 pasos, bloqueo, desembarcos) |
 | 10 | Política, diplomacia y árbol de Argentina | Hecho (relaciones, justificación, tensión, voluntad, paz, mediación, árbol 1978, eventos) |
 | 11 | IA | Hecho (nivel Medio) |
-| 12 | Interfaz, sonido, guardar y cargar | Hecho salvo sonido (3 ranuras en el navegador y código de partida) |
+| 12 | Interfaz, sonido, guardar y cargar | Hecho salvo sonido (3 ranuras en el navegador y código de partida; noticias tipo diario) |
 
 Hasta el paso 2 incluido se usó Godot; desde ahí el juego es web, así se puede
 probar en el navegador antes de cada entrega.
@@ -59,9 +59,10 @@ y abrir <http://localhost:8000>.
 | Mover tropas | Clic derecho en el destino | Botón Mover y tocar el destino |
 | Atacar ya (plantilla rápida) | Clic derecho en una provincia enemiga con tropas | Botón Atacar… |
 | Planear una operación | Botón Atacar… o ficha de la provincia enemiga | Igual |
-| Ver un país (economía, ejército, aviación) | Clic en el país de la barra o de una ficha, o doble clic en una provincia | Tocar el nombre del país |
-| Vista de suministro | V o botón Suministro | Botón Suministro |
-| Ataque aéreo | Ficha de una provincia enemiga, o pestaña Aviación del país | Igual |
+| Ver un país (resumen, diplomacia, ejército, economía, suministro) | Clic en el país de la barra o de una ficha, o doble clic en una provincia | Tocar el nombre del país |
+| Mapa político / de suministro | V, o los botones de bandera y caja abajo a la derecha | Botones de abajo |
+| Ver una batalla | Clic en el ícono de espadas, o en la lista de operaciones | Tocar el ícono |
+| Ataque aéreo | Ficha de una provincia enemiga, o pestaña Ejército del país | Igual |
 | Cancelar | Esc | × |
 
 ## Ejércitos y combate
@@ -75,13 +76,22 @@ y abrir <http://localhost:8000>.
 - **Para el juego completo:** cada país con registros usa su orden de batalla
   real. Sin registros de ese año, estimación con los años anteriores; sin ningún
   dato, por tamaño y poder militar del país.
-- **Combate:** `Ventaja = raíz(P_ataque / P_defensa) × Azar(0,8 a 1,2)` por
+- **Combate continuo (como en HOI4):** el plan (objetivos, eje, fuerzas, postura,
+  días de preparación, artillería y aviación) se arma igual; después de la
+  preparación y de un bombardeo opcional de 12 h, la batalla corre hora a hora sin
+  pausas hasta que un lado se queda sin organización. Si se quiebra el defensor, se
+  retira (o se rinde si está cercado) y se toma la provincia; si hay más objetivos
+  marcados y llega el suministro, las tropas siguen solas al próximo. Si se agota
+  el atacante, el ataque termina. Las reservas entran solas cuando hay lugar en el
+  frente. En el mapa, cada batalla tiene un ícono de espadas con una barra (verde
+  lo propio, rojo lo enemigo); con clic se ve el detalle y se puede suspender.
+  La predicción da la probabilidad de tomar la provincia y los días de combate.
+- **Fórmula:** `Ventaja = raíz(P_ataque / P_defensa) × Azar(0,8 a 1,2)` por
   hora, con ancho de frente por terreno (llanura 6, ciudad 4, selva 3, montaña 2),
   atrincheramiento, ríos, noche, sorpresa, postura, calidad del plan y
   experiencia del general. Todos los números están en `data/reglas/combate.json`
   y se ajustan probando.
-- **Guerra:** para probar, la ficha de una provincia extranjera tiene el botón
-  "Declarar la guerra". La justificación llega con la diplomacia (paso 10).
+- **Guerra:** hace falta una justificación (pestaña Diplomacia del otro país).
 - **Defensa territorial:** una provincia propia sin brigadas tiene una guarnición
   chica (más grande cuanto más grande la provincia, el doble en ciudades).
 - **Pendiente:** clima, sonido, subdividir las provincias más grandes.
@@ -126,7 +136,19 @@ python3 tools/construir_poder_militar.py
 - **Diplomacia** (`data/diplomacia/1978.json`, `data/reglas/diplomacia.json`):
   relaciones, reclamos territoriales, justificación de guerra (25 días con
   reclamo, 60 sin él), tensión mundial, voluntad nacional, alto el fuego o paz
-  con cesión, mediación cuando la tensión es alta.
+  con cesión, mediación cuando la tensión es alta. Acciones con cada país:
+  mejorar relaciones (misión de 4 meses), acuerdo comercial (divisas), pacto de no
+  agresión, alianza defensiva (los aliados entran si atacan a uno), ayuda militar
+  y denuncia ante la ONU.
+- **Noticias:** lo importante (guerras, paz, pérdidas de territorio, eventos,
+  propuestas) sale en el centro como la tapa de un diario y pausa el juego hasta
+  cerrarla. Lo chico sale un momento abajo y se va solo.
+- **Panel del país:** Resumen (con el árbol de decisiones), Diplomacia, Ejército
+  (tierra, aire por modelo y mar; producir y comprar en cuatro pasos; diseño),
+  Economía y Suministro. La barra de arriba muestra mano de obra, brigadas,
+  aviones y barcos con íconos: al pasar el mouse se ve el detalle.
+- **Tanques:** se compran o fabrican por compañías de 10; al llegar reequipan a
+  las brigadas blindadas y mecanizadas con el tanque más flojo.
 - **Árbol de Argentina 1978** (`data/arboles/ARG_1978.json`) con ramas Exterior y
   Fuerzas Armadas, y eventos con fecha (`data/eventos/1978.json`): el laudo del
   Beagle, el embargo de EE.UU., la noche del 21 de diciembre.

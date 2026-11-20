@@ -1,44 +1,94 @@
 {
   "_comentario": "Reglas de la economía (guion: Economía, industria y mercado). Dinero en millones de dólares de 1978. Los valores se ajustan probando.",
   "fuente": "Reglas del juego (elaboración propia)",
-
   "sectores": {
-    "siderurgia": { "nombre": "Siderurgia", "texto": "Acero para el equipo terrestre." },
-    "metalmecanica": { "nombre": "Metalmecánica", "texto": "Equipo terrestre y repuestos." },
-    "aeronautica": { "nombre": "Aeronáutica", "texto": "Aviones de fabricación propia." },
-    "astilleros": { "nombre": "Astilleros", "texto": "Barcos (se usa con la marina, paso 9)." }
+    "siderurgia": {
+      "nombre": "Siderurgia",
+      "texto": "Acero para el equipo terrestre."
+    },
+    "metalmecanica": {
+      "nombre": "Metalmecánica",
+      "texto": "Equipo terrestre y repuestos."
+    },
+    "aeronautica": {
+      "nombre": "Aeronáutica",
+      "texto": "Aviones de fabricación propia."
+    },
+    "astilleros": {
+      "nombre": "Astilleros",
+      "texto": "Barcos (se usa con la marina, paso 9)."
+    }
   },
-
   "productos": {
-    "equipo": { "nombre": "Equipo para brigadas", "unidad": "juegos", "costo": 8, "sectores": ["siderurgia", "metalmecanica"], "por_nivel_por_dia": 0.012, "origen_extranjero": ["USA", "FRA", "ISR", "URS"] },
-    "repuestos": { "nombre": "Repuestos", "unidad": "lotes", "costo": 1, "sectores": ["metalmecanica"], "por_nivel_por_dia": 0.25, "origen_extranjero": ["USA", "FRA", "ISR", "URS", "GBR"] }
+    "equipo": {
+      "nombre": "Equipo para brigadas",
+      "unidad": "juegos",
+      "costo": 8,
+      "sectores": [
+        "siderurgia",
+        "metalmecanica"
+      ],
+      "por_nivel_por_dia": 0.012,
+      "origen_extranjero": [
+        "USA",
+        "FRA",
+        "ISR",
+        "URS"
+      ]
+    },
+    "repuestos": {
+      "nombre": "Repuestos",
+      "unidad": "lotes",
+      "costo": 1,
+      "sectores": [
+        "metalmecanica"
+      ],
+      "por_nivel_por_dia": 0.25,
+      "origen_extranjero": [
+        "USA",
+        "FRA",
+        "ISR",
+        "URS",
+        "GBR"
+      ]
+    }
   },
-
-  "equipo_por_tipo": { "infanteria": 1, "montana": 1, "mecanizada": 3, "blindada": 4 },
-
+  "equipo_por_tipo": {
+    "infanteria": 1,
+    "montana": 1,
+    "mecanizada": 3,
+    "blindada": 4
+  },
   "contratos": {
-    "estatal": { "nombre": "Estatal", "texto": "Barata y con control total, pero limitada por tu industria.", "costo": 1.0 },
-    "extranjera": { "nombre": "Compra extranjera", "texto": "Equipo rápido, pero caro, en divisas y con riesgo de embargo.", "costo": 1.6, "dias_entrega": 90 }
+    "estatal": {
+      "nombre": "Estatal",
+      "texto": "Barata y con control total, pero limitada por tu industria.",
+      "costo": 1.0
+    },
+    "extranjera": {
+      "nombre": "Compra extranjera",
+      "texto": "Equipo rápido, pero caro, en divisas y con riesgo de embargo.",
+      "costo": 1.6,
+      "dias_entrega": 90
+    }
   },
-
   "aviones_por_nivel_por_dia": 0.006,
-
   "repuestos": {
     "consumo_por_avion_por_dia": 0.02,
     "consumo_por_brigada_mecanizada_por_dia": 0.08,
     "dias_cobertura_ideal": 180,
     "disponibilidad_sin_repuestos": 0.4
   },
-
   "presupuesto": {
-    "impuestos_min": 0.1, "impuestos_max": 0.4,
-    "gasto_militar_min": 0.01, "gasto_militar_max": 0.12,
+    "impuestos_min": 0.1,
+    "impuestos_max": 0.4,
+    "gasto_militar_min": 0.01,
+    "gasto_militar_max": 0.12,
     "crecimiento_base": 0.03,
     "crecimiento_por_punto_gasto": -0.004,
     "crecimiento_en_guerra": -0.02,
     "divisas_netas_por_pbi": 0.02
   },
-
   "estabilidad": {
     "base": 70,
     "por_punto_impuestos_sobre_20": -1.2,
@@ -47,12 +97,31 @@
     "por_cada_10000_bajas": -4,
     "cambio_por_dia": 0.15
   },
-
-  "inversion": { "parte_del_pbi": 0.02, "dias": 730 },
-
+  "inversion": {
+    "parte_del_pbi": 0.02,
+    "dias": 730
+  },
   "_embargos_comentario": "Embargos de armas históricos: el proveedor no vende al país desde esa fecha. Además, ningún país le vende a quien está en guerra con él.",
   "embargos": [
-    { "proveedor": "USA", "pais": "CHL", "desde": "1976-06-30", "nombre": "Enmienda Kennedy (1976)" },
-    { "proveedor": "USA", "pais": "ARG", "desde": "1978-10-01", "nombre": "Enmienda Humphrey-Kennedy (1978)" }
-  ]
+    {
+      "proveedor": "USA",
+      "pais": "CHL",
+      "desde": "1976-06-30",
+      "nombre": "Enmienda Kennedy (1976)"
+    },
+    {
+      "proveedor": "USA",
+      "pais": "ARG",
+      "desde": "1978-10-01",
+      "nombre": "Enmienda Humphrey-Kennedy (1978)"
+    }
+  ],
+  "_tanques_comentario": "Tanques: se encargan por compañías de 10. Al llegar reequipan a las brigadas blindadas y mecanizadas que tengan un tanque peor (companias_por_brigada) y el modelo pasa a ser el de las brigadas nuevas. Fabricar: solo los modelos que el país puede hacer, según la metalmecánica.",
+  "tanques": {
+    "companias_por_nivel_por_dia": 0.02,
+    "companias_por_brigada": {
+      "blindada": 10,
+      "mecanizada": 3
+    }
+  }
 }
